@@ -1,0 +1,60 @@
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+
+
+
+
+//user schema
+var UserSchema = new Schema({
+    subscriptions: [{
+        id: String,
+        activeToken: String,
+        activated: {
+            type: Boolean,
+            default: false
+        },
+        canceled: {
+            type: Boolean,
+            default: false,
+        }
+    }],
+    discord_id: String,
+    email: String,
+    roles: [{
+        id: String,
+    }],
+    tempRoles: [{
+        id: String,
+    }],
+    pendingChange: {
+        type: Boolean,
+        default: false
+    },
+    totalReferred: {
+        type: Number,
+        default: 0,
+    },
+    currentReferred: {
+        type: Number,
+        default: 0,
+    },
+    referred: {
+        type: String,
+        default: "",
+    },
+    referral: {
+        type: String,
+        default: "",
+    },
+    
+    veteranUser: {
+        type: Boolean,
+        default: false
+    },
+
+});
+
+const User = mongoose.model('User', UserSchema);
+
+module.exports = User;
