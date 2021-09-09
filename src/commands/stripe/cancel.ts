@@ -1,25 +1,37 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 const wait = require('util').promisify(setTimeout);
+import { ContextMenuInteraction } from 'discord.js';
+import { cancelRole } from '../../functions/functions'
+const User = require('../../data/models/user');
 
 const data = new SlashCommandBuilder()
 	.setName('cancel')
 	.setDescription('Cancel your subscription!')
-	.addStringOption((option: any) =>
+	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('package')
 			.setDescription('The gif category')
 			.setRequired(true)
-			.addChoice('trading','t')
-			.addChoice('forex','f')
-			.addChoice('sports','s'))
+			.addChoice('trading', process.env.product_1)
+			.addChoice('forex', process.env.product_2)
+			.addChoice('sports', process.env.product_3));
         
 
 module.exports = {
     data: data,
-    async execute(interaction: any) {
-
+    async execute(interaction: ContextMenuInteraction) {
+		const user =  await User.findOne({"discord_id": interaction.member.user.id}).exec();
         await interaction.deferReply({ ephemeral: true });
-        await wait(10);
-        await interaction.editReply('Canceled!')
+		
+
+		const hasRole = cancelRole(interaction.options.getString('package'), user, interaction);
+
+		if(hasRole) {
+			await interaction.editReply("Has Role!")
+		}
+
+
+
+
     } 
 }
 
