@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoSchema = mongoose.Schema;
 
 
 
 
 
 //user schema
-var UserSchema = new Schema({
+var UserSchema = new mongoSchema({
     subscriptions: [{
         id: String,
         activeToken: String,
@@ -55,6 +55,6 @@ var UserSchema = new Schema({
 
 });
 
-const User = mongoose.model('User', UserSchema);
+const UserDocument = mongoose.model('User', UserSchema);
 
-module.exports = User;
+module.exports = UserDocument;

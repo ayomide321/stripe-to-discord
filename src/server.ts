@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
-
+const User = require('./data/models/user');
 const bodyParser = require('body-parser');
 const stripe = require('stripe')(process.env.stripeToken);
 const endpointSecret = process.env.endpointSecret;
