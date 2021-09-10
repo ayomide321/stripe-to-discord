@@ -19,11 +19,10 @@ const data = new SlashCommandBuilder()
 module.exports = {
     data: data,
     async execute(interaction: ContextMenuInteraction) {
-		const user =  await User.findOne({"discord_id": interaction.member.user.id}).exec();
-        await interaction.deferReply({ ephemeral: true });
+		const user =  await User.findOne({"discord_id": interaction.member!.user.id}).exec();
 		
 
-		const hasRole = cancelRole(interaction.options.getString('package'), user, interaction);
+		const hasRole = await cancelRole(interaction.options.getString('package')!, user, interaction);
 
 		if(hasRole) {
 			await interaction.editReply("Has Role!")

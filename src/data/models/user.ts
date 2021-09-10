@@ -8,8 +8,9 @@ const mongoSchema = mongoose.Schema;
 //user schema
 var UserSchema = new mongoSchema({
     subscriptions: [{
-        id: String,
+        _id: String,
         activeToken: String,
+        product: String,
         activated: {
             type: Boolean,
             default: false
@@ -56,5 +57,4 @@ var UserSchema = new mongoSchema({
 });
 
 const UserDocument = mongoose.model('User', UserSchema);
-
-module.exports = UserDocument;
+export = UserDocument
