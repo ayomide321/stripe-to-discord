@@ -1,9 +1,9 @@
 /// <reference path="../client.d.ts" />
 
-import DiscordJS, { Intents, Collection, Client } from 'discord.js'
+import DiscordJS, { Intents, Collection, Client, TextChannel } from 'discord.js'
 import fs from 'fs'
 import mongoose from 'mongoose';
-import { assignRole } from './functions/functions'
+import { assignRole, assignServerRoles } from './functions/functions'
 require('dotenv').config();
 
 import UserDocument = require('./data/models/user')
@@ -35,7 +35,13 @@ client.on('ready',  () => {
 	}
 	client.handleEvents(eventFiles, './src/events');
 	client.handleCommands(commandFolders, './src/commands');
-	
+	assignServerRoles(client)
+});
+
+client.on('guildMemberAdd', member => {
+    const welcome_channel = member.guild.channels.cache.get(process.env.welcome_channel!)! as TextChannel
+	welcome_channel.send('**' + member.user.username + '**, has joined the server!')
+    member.roles.add(process.env.unverified_role!)
 });
 
 client.on('message', async (message) =>{
@@ -51,6 +57,8 @@ client.on('message', async (message) =>{
 	}
 	
 })
+
+
 
 client.login(process.env.TOKEN);
 require ('./server')

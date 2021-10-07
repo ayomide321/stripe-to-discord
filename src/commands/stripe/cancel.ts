@@ -9,7 +9,7 @@ const data = new SlashCommandBuilder()
 	.setDescription('Cancel your subscription!')
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('package')
-			.setDescription('The gif category')
+			.setDescription('The product category')
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
 			.addChoice('forex', process.env.product_2)

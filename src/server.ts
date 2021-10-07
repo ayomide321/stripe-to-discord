@@ -67,7 +67,7 @@ function makeid(length: number) {
                 if(user.subscriptions.findOne({"product" : session.line_items.data[0].price.product}))
                 {
                     user.findOneAndDelete({"subscriptions.product" : session.line_items.data[0].price.product})
-                    console.log("An old subscription was found, deleting")
+                    console.log("An old identical subscription was found, deleting")
                 }
                 console.log("Existing account was found, updating...")
                 user.subscriptions.push(subscriptionDoc)

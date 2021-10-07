@@ -1,7 +1,6 @@
 /// <reference path="../../client.d.ts" />
 
 import { Client, Interaction } from 'discord.js'
-
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction: Interaction, client: Client) {

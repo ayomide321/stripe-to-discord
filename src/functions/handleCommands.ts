@@ -3,6 +3,7 @@
 import { Command, Client } from 'discord.js'
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
+const { permissions } = require('./functions.ts')
 const fs = require('fs');
 require('dotenv').config();
 
@@ -14,10 +15,9 @@ module.exports = (client: Client) => {
         for (const folder of commandFolders) {
             const commandFiles = fs.readdirSync(`${path}/${folder}`).filter((file: string) => file.endsWith('.ts'));
 
-            
             for (const file of commandFiles) {
                 const command = require(`../commands/${folder}/${file}`)
-
+                //await command.permission.push({ permissions })
                 client.commands.set(command.data.name, command)
                 client.commandArray.push(command.data.toJSON());
             }
