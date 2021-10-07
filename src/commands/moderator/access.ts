@@ -6,6 +6,7 @@ const User = require('../../data/models/user');
 const data = new SlashCommandBuilder()
 	.setName('get-activation-code')
 	.setDescription('Gets the activation code from an email')
+    .setDefaultPermission(false)
     .addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('package')
 			.setDescription('The gif category')

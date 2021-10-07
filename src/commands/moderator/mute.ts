@@ -4,6 +4,7 @@ import { ContextMenuInteraction } from 'discord.js';
 const data = new SlashCommandBuilder()
 	.setName('mute')
 	.setDescription('Mutes User')
+    .setDefaultPermission(false)
     .addUserOption((option: typeof SlashCommandOptionsOnlyBuilder) => 
         option.setName('user')
             .setDescription('The user you want to mute')
