@@ -5,6 +5,7 @@ import  UserDocument  = require('./data/models/user');
 const bodyParser = require('body-parser');
 const stripe = require('stripe')(process.env.stripeToken);
 //const endpointSecret = process.env.endpointSecret;
+//test endpoint secret
 const endpointSecret = 'whsec_3qqz8P7hMitc1eWAY5r43mKqNjWdlHKk'
 const app = express();
 
