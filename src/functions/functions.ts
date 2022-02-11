@@ -1,4 +1,4 @@
-import DiscordJS, { CommandInteraction, ApplicationCommandPermissionsManager } from 'discord.js'
+import DiscordJS, { ContextMenuInteraction , ApplicationCommandPermissionsManager } from 'discord.js'
 import  UserDocument  = require('../data/models/user');
 const stripe = require('stripe')(process.env.stripeToken);;
 require('dotenv').config();
@@ -34,7 +34,7 @@ export async function checkRole(x: string, member: any){
     })
 }
 
-export async function activateRole(x: string, code: string, interaction: CommandInteraction){
+export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction ){
     try {
         const user = await UserDocument.findOneAndUpdate({"subscriptions.product": x, "subscriptions.activeToken": code, "subscriptions.activated": false}, {$set: {"subscriptions.$.activated": true, "subscriptions.$.activeToken": "", "discord_id": interaction.member!.user.id}}, { upsert: false, returnDocument: 'after', useFindAndModify: false }).exec()
         if(user){
@@ -53,7 +53,7 @@ export async function activateRole(x: string, code: string, interaction: Command
     }
 };
 
-export async function cancelRole(product: string, member: any, interaction: CommandInteraction){
+export async function cancelRole(product: string, member: any, interaction: ContextMenuInteraction ){
     let boolcheckRole = await checkRole(product, member)
     if(boolcheckRole){
         const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
@@ -88,7 +88,7 @@ export async function cancelRole(product: string, member: any, interaction: Comm
 }
 
 //TODO: MAKE ADMIN FUNCTION
-export async function getActivationCode(x: any, product: string, interaction: CommandInteraction){
+export async function getActivationCode(x: any, product: string, interaction: ContextMenuInteraction ){
     let boolcheckRole = await checkRole(product, x)
     if(boolcheckRole){
         x.findOne({"subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": false},

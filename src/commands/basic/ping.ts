@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 import { Command } from 'discord.js';
 
 
-export const Ping: Command = {
+export const ping: Command = {
     data: new SlashCommandBuilder()
 	.setName('ping')
 	.setDescription('Displays pong!'),
@@ -13,6 +13,4 @@ export const Ping: Command = {
     
 }
 
-module.exports = {
-    Ping
-}
+module.exports = ping

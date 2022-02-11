@@ -1,4 +1,4 @@
-import { Collection, Message, Interaction, ApplicationCommand, CommandInteraction } from "discord.js";
+import { Collection, Message, ContextMenuInteraction  } from "discord.js";
 import { SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "@discordjs/builders";
 declare module "discord.js" {
         export interface Client {
@@ -15,7 +15,12 @@ declare module "discord.js" {
 
         export interface Command {
             data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
-            run: (interaction: CommandInteraction) => Promise<void>;
+            run: (interaction: ContextMenuInteraction ) => Promise<void>;
+            permissions?: {
+                id: string;
+                type: string;
+                permission: boolean;
+            }[] = [];
           }
     }
     export {}

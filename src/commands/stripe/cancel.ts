@@ -4,7 +4,7 @@ import { Command } from 'discord.js';
 import { cancelRole } from '../../functions/functions'
 const User = require('../../data/models/user');
 
-export const cancelAccount: Command = {
+export const cancel: Command = {
 	data: new SlashCommandBuilder()
 	.setName('cancel')
 	.setDescription('Cancel your subscription!')
@@ -13,8 +13,7 @@ export const cancelAccount: Command = {
 			.setDescription('The product category')
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2)
-			.addChoice('sports', process.env.product_3)),
+			.addChoice('forex', process.env.product_2)),
         
 
     run: async (interaction) => {
@@ -29,6 +28,4 @@ export const cancelAccount: Command = {
     } 
 }
 
-module.exports = {
-    cancelAccount
-}
+module.exports = cancel

@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 import { ContextMenuInteraction, Command } from 'discord.js';
 
-export const Gif: Command = {
+export const gif: Command = {
 	data: new SlashCommandBuilder()
 	.setName('gif')
 	.setDescription('Sends a random gif!')
@@ -18,6 +18,4 @@ export const Gif: Command = {
     },
 };
 
-module.exports = {
-    Gif
-}
+module.exports = gif

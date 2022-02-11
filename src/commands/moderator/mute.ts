@@ -21,6 +21,4 @@ export const mute: Command = {
     } 
 }
 
-module.exports = {
-    mute
-}
+module.exports = mute

@@ -5,7 +5,7 @@ import { activateRole } from '../../functions/functions'
 const User = require('../../data/models/user');
 
 
-export const activateAccount: Command = {
+export const activate: Command = {
 	data: new SlashCommandBuilder()
 	.setName('activate')
 	.setDescription('Cancel your subscription!')
@@ -14,8 +14,7 @@ export const activateAccount: Command = {
 			.setDescription('The gif category')
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2)
-			.addChoice('sports', process.env.product_3))
+			.addChoice('forex', process.env.product_2))
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('activation')
 			.setDescription('Activation code for package')
@@ -27,6 +26,4 @@ export const activateAccount: Command = {
     } 
 }
 
-module.exports = {
-    activateAccount
-}
+module.exports = activate
