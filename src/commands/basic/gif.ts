@@ -18,5 +18,3 @@ module.exports = {
         await interaction.reply('Pong!')
     } 
 }
-
-export {}
