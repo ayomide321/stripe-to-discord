@@ -1,7 +1,8 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
-import { ContextMenuInteraction } from 'discord.js';
+import { ContextMenuInteraction, Command } from 'discord.js';
 
-const data = new SlashCommandBuilder()
+export const Gif: Command = {
+	data: new SlashCommandBuilder()
 	.setName('gif')
 	.setDescription('Sends a random gif!')
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
@@ -10,11 +11,13 @@ const data = new SlashCommandBuilder()
 			.setRequired(true)
 			.addChoice('Funny', 'gif_funny')
 			.addChoice('Meme', 'gif_meme')
-			.addChoice('Movie', 'gif_movie'));
+			.addChoice('Movie', 'gif_movie')),
+
+    run: async (interaction) => {
+        await interaction.reply('Pong!')
+    },
+};
 
 module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
-        await interaction.reply('Pong!')
-    } 
+    Gif
 }
