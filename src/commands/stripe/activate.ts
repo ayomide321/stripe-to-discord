@@ -1,10 +1,12 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 const wait = require('util').promisify(setTimeout);
-import { ContextMenuInteraction } from 'discord.js';
+import { Command } from 'discord.js';
 import { activateRole } from '../../functions/functions'
 const User = require('../../data/models/user');
 
-const data = new SlashCommandBuilder()
+
+export const activateAccount: Command = {
+	data: new SlashCommandBuilder()
 	.setName('activate')
 	.setDescription('Cancel your subscription!')
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
@@ -17,21 +19,14 @@ const data = new SlashCommandBuilder()
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('activation')
 			.setDescription('Activation code for package')
-			.setRequired(true));
+			.setRequired(true)),
 	
-        
 
-module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
-		
-
+    run: async (interaction) => {
 		activateRole(interaction.options.getString('package')!, interaction.options.getString('activation')!, interaction)
-
-
-
-
     } 
 }
 
-export {}
+module.exports = {
+    activateAccount
+}

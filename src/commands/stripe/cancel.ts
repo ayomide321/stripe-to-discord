@@ -1,10 +1,11 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 const wait = require('util').promisify(setTimeout);
-import { ContextMenuInteraction } from 'discord.js';
+import { Command } from 'discord.js';
 import { cancelRole } from '../../functions/functions'
 const User = require('../../data/models/user');
 
-const data = new SlashCommandBuilder()
+export const cancelAccount: Command = {
+	data: new SlashCommandBuilder()
 	.setName('cancel')
 	.setDescription('Cancel your subscription!')
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
@@ -13,12 +14,10 @@ const data = new SlashCommandBuilder()
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
 			.addChoice('forex', process.env.product_2)
-			.addChoice('sports', process.env.product_3));
+			.addChoice('sports', process.env.product_3)),
         
 
-module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
+    run: async (interaction) => {
 		const user =  await User.findOne({"discord_id": interaction.member!.user.id}).exec();
 		
 
@@ -27,11 +26,9 @@ module.exports = {
 		if(hasRole) {
 			await interaction.editReply("Has Role!")
 		}
-
-
-
-
     } 
 }
 
-export {}
+module.exports = {
+    cancelAccount
+}

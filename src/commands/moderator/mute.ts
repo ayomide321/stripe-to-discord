@@ -1,7 +1,8 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
-import { ContextMenuInteraction } from 'discord.js';
+import { Command } from 'discord.js';
 
-const data = new SlashCommandBuilder()
+export const mute: Command = {
+    data: new SlashCommandBuilder()
 	.setName('mute')
 	.setDescription('Mutes User')
     .setDefaultPermission(false)
@@ -12,14 +13,14 @@ const data = new SlashCommandBuilder()
             
     .addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
         option.setName('reason')
-            .setDescription('Why is this user being muted?'));
+            .setDescription('Why is this user being muted?')),
 
 
-module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
+    run: async (interaction) => {
         await interaction.reply({content: 'Pong!', ephemeral: true})
     } 
 }
 
-export {}
+module.exports = {
+    mute
+}

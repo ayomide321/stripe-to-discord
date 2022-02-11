@@ -1,11 +1,10 @@
-import DiscordJS, { ContextMenuInteraction } from 'discord.js'
+import DiscordJS, { CommandInteraction, ApplicationCommandPermissionsManager } from 'discord.js'
 import  UserDocument  = require('../data/models/user');
-const stripe = require('stripe')(process.env.stripeToken);
-const si = require('stock-info');
+const stripe = require('stripe')(process.env.stripeToken);;
 require('dotenv').config();
 
 
-export const permissions = [
+export const permissionsList = [
 	{
 		id: process.env.moderator_role_1,
 		type: 'ROLE',
@@ -26,18 +25,16 @@ export function mapRole(){
     return roleMap
 }
 
-export function checkRole(x: string, member: any){
+export async function checkRole(x: string, member: any){
     if(!member) return false
-    const memberRole = member.findOne({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true})
-    if(memberRole)
-    {
-        return true
-    } else {
-        return false
-    }
+    const memberRole = await member.findOne({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, 
+    function(err: Error, found: typeof member){
+        if(err) throw err;
+        return (found ? true : false)
+    })
 }
 
-export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction){
+export async function activateRole(x: string, code: string, interaction: CommandInteraction){
     try {
         const user = await UserDocument.findOneAndUpdate({"subscriptions.product": x, "subscriptions.activeToken": code, "subscriptions.activated": false}, {$set: {"subscriptions.$.activated": true, "subscriptions.$.activeToken": "", "discord_id": interaction.member!.user.id}}, { upsert: false, returnDocument: 'after', useFindAndModify: false }).exec()
         if(user){
@@ -56,9 +53,10 @@ export async function activateRole(x: string, code: string, interaction: Context
     }
 };
 
-export async function cancelRole(x: string, member: any, interaction: ContextMenuInteraction){
-    if(checkRole(x, member)){
-        const currentSub = await member.subscriptions.findOne({"product": x, "activated": true}).exec()
+export async function cancelRole(product: string, member: any, interaction: CommandInteraction){
+    let boolcheckRole = await checkRole(product, member)
+    if(boolcheckRole){
+        const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
         try{
             const subscription = stripe.subscriptions.retrieve(currentSub._id);
             if(subscription.cancel_at_period_end == true)
@@ -81,7 +79,7 @@ export async function cancelRole(x: string, member: any, interaction: ContextMen
 
         
         
-        await member.findOneAndUpdate({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, {$set: {"subscriptions.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
+        await member.findOneAndUpdate({"subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": true}, {$set: {"subscriptions.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
         return true;
     } else {
         interaction.reply({content: "You don't have a subscription for this role.", ephemeral: true})
@@ -90,9 +88,9 @@ export async function cancelRole(x: string, member: any, interaction: ContextMen
 }
 
 //TODO: MAKE ADMIN FUNCTION
-export async function getActivationCode(x: any, product: string, interaction: ContextMenuInteraction){
-
-    if(checkRole(product, x)){
+export async function getActivationCode(x: any, product: string, interaction: CommandInteraction){
+    let boolcheckRole = await checkRole(product, x)
+    if(boolcheckRole){
         x.findOne({"subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": false},
             function(err: any, sub: any) {
                 if(err) {
@@ -146,14 +144,6 @@ export function assignServerRoles(client: DiscordJS.Client){
 	});
 }
 
-export async function getTicker(ticker: string, interaction: ContextMenuInteraction){
-    const data = await si.getSingleStockInfo(ticker);
-    console.log(data)
-    const message = `**Name:** ${data.longName}\n**Symbol:** ${data.symbol}\nDaily Change: $${data.regularMarketChange}\nPercent Change: ${data.regularMarketChangePercent}%\n `
-    if(data) {
-        interaction.reply({content: message , ephemeral: true})
-    } else {
-        interaction.reply({content: "This is not a valid ticker symbol.", ephemeral: true})
-        return false;
-    }
+module.exports = {
+    permissionsList, assignServerRoles
 }

@@ -1,15 +1,18 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-import { ContextMenuInteraction } from 'discord.js';
+import { Command } from 'discord.js';
 
-const data = new SlashCommandBuilder()
+
+export const Ping: Command = {
+    data: new SlashCommandBuilder()
 	.setName('ping')
-	.setDescription('Displays pong!')
+	.setDescription('Displays pong!'),
 
-module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
+    run: async (interaction) => {
         await interaction.reply({content: 'Pong!', ephemeral: true})
     } 
+    
 }
 
-export {}
+module.exports = {
+    Ping
+}

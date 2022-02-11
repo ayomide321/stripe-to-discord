@@ -1,9 +1,11 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
-import { ContextMenuInteraction } from 'discord.js';
+import { Command } from 'discord.js';
+import { access } from 'fs';
 import { getActivationCode } from '../../functions/functions';
 const User = require('../../data/models/user');
 
-const data = new SlashCommandBuilder()
+const accessActivation: Command = {
+    data: new SlashCommandBuilder()
 	.setName('get-activation-code')
 	.setDescription('Gets the activation code from an email')
     .setDefaultPermission(false)
@@ -16,17 +18,15 @@ const data = new SlashCommandBuilder()
 			.addChoice('sports', process.env.product_3))
     .addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
         option.setName('email')
-            .setDescription('Enter the email whose activation code you want to access'));
-    
+            .setDescription('Enter the email whose activation code you want to access')),
 
-
-module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
+    run: async (interaction) => {
 
         const user =  await User.findOne({"email": interaction.options.getString('email')}).exec();
         getActivationCode(user, interaction.options.getString('package')!, interaction)
     } 
 }
 
-export {}
+module.exports = {
+    accessActivation
+}
