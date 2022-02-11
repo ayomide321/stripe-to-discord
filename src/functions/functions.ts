@@ -23,7 +23,6 @@ export function mapRole(){
     let roleMap = new Map<string, string>();
 	roleMap.set(process.env.product_1!, process.env.role_1!)
 	roleMap.set(process.env.product_2!, process.env.role_2!)
-	roleMap.set(process.env.product_3!, process.env.role_3!)
     return roleMap
 }
 
@@ -59,14 +58,17 @@ export async function activateRole(x: string, code: string, interaction: Context
 
 export async function cancelRole(x: string, member: any, interaction: ContextMenuInteraction){
     if(checkRole(x, member)){
-        const currentSub = await member.findOne({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}).exec()
+        const currentSub = await member.subscriptions.findOne({"product": x, "activated": true}).exec()
         try{
             const subscription = stripe.subscriptions.retrieve(currentSub._id);
             if(subscription.cancel_at_period_end == true)
             {
                 interaction.reply({content: "Your subscription is already cancelled.", ephemeral: true})
-                return false;
+
             } else {
+                subscription.cancel_at_period_end = true;
+                interaction.reply({content: "Your subscription is set to cancel by the end of the month.", ephemeral: true})
+                //TODO SEND EMAIL FOR CANCELLATION
 
             }
             subscription.save()
@@ -80,14 +82,14 @@ export async function cancelRole(x: string, member: any, interaction: ContextMen
         
         
         await member.findOneAndUpdate({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, {$set: {"subscriptions.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
-        interaction.editReply({})
         return true;
     } else {
-        interaction.reply({content: "You don't have a subscription, please try again.", ephemeral: true})
+        interaction.reply({content: "You don't have a subscription for this role.", ephemeral: true})
         return false;
     }
 }
 
+//TODO: MAKE ADMIN FUNCTION
 export async function getActivationCode(x: any, product: string, interaction: ContextMenuInteraction){
 
     if(checkRole(product, x)){
