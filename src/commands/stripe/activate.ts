@@ -2,7 +2,7 @@ const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discor
 const wait = require('util').promisify(setTimeout);
 import { Command } from 'discord.js';
 import { activateRole } from '../../functions/functions'
-const User = require('../../data/models/user');
+
 
 
 export const activate: Command = {

@@ -1,5 +1,6 @@
 import DiscordJS, { ContextMenuInteraction , ApplicationCommandPermissionsManager } from 'discord.js'
-import  UserDocument  = require('../data/models/user');
+import { CallbackError } from 'mongoose';
+import { UserDocument, UserSchemaType } from '../data/models/user'
 const stripe = require('stripe')(process.env.stripeToken);;
 require('dotenv').config();
 
@@ -25,13 +26,15 @@ export function mapRole(){
     return roleMap
 }
 
-export async function checkRole(x: string, member: any){
+export async function checkRole(x: string, member: UserSchemaType){
     if(!member) return false
-    const memberRole = await member.findOne({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, 
-    function(err: Error, found: typeof member){
-        if(err) throw err;
-        return (found ? true : false)
-    })
+    
+    await UserDocument.findOne({
+        "email": member.email, "subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, 
+        function(err: CallbackError, found: any){
+            if(err) throw err;
+            return (found ? true : false);
+        }).exec()
 }
 
 export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction ){
@@ -54,7 +57,8 @@ export async function activateRole(x: string, code: string, interaction: Context
 };
 
 export async function cancelRole(product: string, member: any, interaction: ContextMenuInteraction ){
-    let boolcheckRole = await checkRole(product, member)
+    var boolcheckRole = await checkRole(product, member)
+    console.log("CHECKING ROLE" + boolcheckRole)
     if(boolcheckRole){
         const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
         try{
@@ -142,8 +146,4 @@ export function assignServerRoles(client: DiscordJS.Client){
 			console.log(err)
 		}
 	});
-}
-
-module.exports = {
-    permissionsList, assignServerRoles
 }

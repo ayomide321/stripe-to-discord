@@ -5,8 +5,7 @@ import fs from 'fs'
 import mongoose from 'mongoose';
 import { assignRole, assignServerRoles } from './functions/functions'
 require('dotenv').config();
-
-import UserDocument = require('./data/models/user')
+import { UserDocument, UserSchemaType } from './data/models/user'
 
 export const client: Client = new DiscordJS.Client({ intents: [Intents.FLAGS.GUILDS] });
 

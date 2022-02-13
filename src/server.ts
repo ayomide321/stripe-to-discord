@@ -1,10 +1,13 @@
 require('dotenv').config();
 
+import { User } from 'discord.js';
 import express from 'express'
-import  UserDocument  = require('./data/models/user');
+import { CallbackError } from 'mongoose';
+import { Stripe } from 'stripe';
+import { UserDocument, UserSchemaType } from './data/models/user'
 const bodyParser = require('body-parser');
 const stripe = require('stripe')(process.env.stripeToken);
-const endpointSecret = 'whsec_3qqz8P7hMitc1eWAY5r43mKqNjWdlHKk'
+const endpointSecret = 'whsec_3f8cf7b3f4edf4eec5161723cd5264dab16251ddbe4fbc52fb87d3be9cd9eab9'
 const app = express();
 
 
@@ -19,16 +22,17 @@ function makeid(length: number) {
  }
 
 
- app.post('/webhook', bodyParser.raw({type: 'application/json'}), async (request: any, response: any) => {
+ app.post('/webhook', express.raw({type: 'application/json'}), async (request: express.Request, response: express.Response) => {
     const sig = request.headers['stripe-signature'];
 
-    let event;
+    let event: Stripe.Event;
 
     try {
       event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
     }
     catch (err) {
       response.status(400).send(`Webhook Error: ${err}`);
+      return;
     }
 
     // Handle the event
@@ -36,7 +40,7 @@ function makeid(length: number) {
 
         case 'checkout.session.completed':
 
-            const paymentIntent = event.data.object;
+            const paymentIntent: Stripe.PaymentIntent = event.data.object as Stripe.PaymentIntent;
             const customer = await stripe.customers.retrieve(paymentIntent.customer);
             const session = await stripe.checkout.sessions.retrieve(
             paymentIntent.id,
@@ -49,27 +53,33 @@ function makeid(length: number) {
                 _id: paymentIntent.id,
                 product: session.line_items.data[0].price.product,
                 activeToken: newToken,
-                active: false,
+                activated: false,
             }
             const newCustomer = new UserDocument({
                 email: customer.email,
                 subscriptions: [subscriptionDoc],
             })
 
-            var user = await UserDocument.findOne({"email": customer.email}, {$setOnInsert: newCustomer}, {upsert: true})
-            var newUserCheck = user.subscriptions.findOne({"product" : session.line_items.data[0].price.product})._id == paymentIntent.id 
-            if(newUserCheck)
-            {
-                await stripe.subscriptions.update(user.subscriptions.findOne({"product" : session.line_items.data[0].price.product})._id, { cancel_at_period_end: true });
-                user.findOneAndDelete({"subscriptions.product" : session.line_items.data[0].price.product})
-                console.log("An old identical subscription was found, deleting")
-                user.subscriptions.push(subscriptionDoc)
-                
-                //insert verification email template being sent here
-                return;
+            var productQuery = {
+                'email': customer.email,
+                'subscriptions.product': session.line_items.data[0].price.product,
             }
+
+            await UserDocument.findOneAndUpdate(
+            productQuery,
+            {'$setOnInsert': newCustomer},
+            //'$push': {'email.$.subscription': subscriptionDoc}},  
+            {upsert: true, new: false},
+            async function(err: CallbackError, doc: UserSchemaType | null) {
+                if(err || !doc) return "No User";
+                var productSub = doc.subscriptions._id(session.line_items.data[0].price.product)
+                console.log("An old identical subscription was found, deleting")
+                await stripe.subscriptions.update(productSub._id, { cancel_at_period_end: true });
+                productSub = subscriptionDoc
+                doc.save();
+            }).exec();
             
-            user.save();
+            
             //Check for product type
             //if(session.line_items.data[0].price.product == process.env.stock_prod)
 
@@ -84,42 +94,63 @@ function makeid(length: number) {
             break;
 
         // ... handle other event types
-        case 'customer.subscriptions.updated':
-            const update_session = await stripe.checkout.sessions.retrieve(
-                event.data.object.id,
-                {
-                    expand: ["line_items"],
-                });
+        case 'customer.subscription.updated':
+            const updateObject: Stripe.Subscription = event.data.object as Stripe.Subscription;
                 
-            const updated_cus = await stripe.customers.retrieve(event.data.object.customer);
-            if(updated_cus.cancel_at_period_end == true)
-            {
-                console.log("User is set to cancel")
-                await UserDocument.findOneAndUpdate({"subscriptions.product": update_session.line_items.data[0].price.product, "subscriptions.canceled": false, "subscriptions.activated": true}, {$set: {"subscriptions.canceled":true}}, { upsert: false, returnDocument: 'after',},
-                    function(err: Error, found: any) {
-                        if(err) throw err;
+            const updated_cus = await stripe.customers.retrieve(updateObject.customer);
+            const product_id = (updateObject as any).plan.product
+            const userExists = await UserDocument.exists({'email': updated_cus.email})
 
-                        //mailgun.sendMail(updated_cus.email, "set_cancel")
-                    }); 
+            //If account exists OR account is trying to end
+            if(userExists || updated_cus.cancel_at_period_end == true){
+                if(updated_cus.cancel_at_period_end == true)
+                {
+                    console.log("User is set to cancel")
+                    await UserDocument.findOneAndUpdate({
+                        "email": updated_cus.email,
+                        "subscriptions.product": product_id, 
+                        "subscriptions.canceled": false,}, 
+                        {$set: {"subscriptions.canceled":true}}, 
+                        { upsert: false, returnDocument: 'after'},
+                        function(err: CallbackError, doc: UserSchemaType | null) {
+                            if(err) throw err;
+                            console.log(doc)
+                            //mailgun.sendMail(updated_cus.email, "set_cancel")
+                        }); 
+                } 
+            } else {
+                //Create Account
+                
+                const subscriptionDoc = {
+                    _id: updateObject.id,
+                    product: product_id,
+                    activeToken: makeid(6),
+                    activated: false,
+                }
+                const newCustomer = new UserDocument({
+                    email: updated_cus.email,
+                    subscriptions: [subscriptionDoc],
+                })
+                await UserDocument.create(newCustomer).then(
+                    //SEND EMAIL THAT A NEW ACCOUNT WAS CREATED
+                    
+                )
+                console.log('ACCOUNT WAS JUST CREATED FOR EXISTING MEMBER')
+
             }
             break;
 
-        case 'customer.subscriptions.deleted':
+        case 'customer.subscription.deleted':
 
-            const canceled_customer = event.data.object;
+            const canceled_customer: Stripe.Subscription = event.data.object as Stripe.Subscription;
             const deleted_customer = await stripe.customers.retrieve(canceled_customer.customer);
-            
-            const session_del = await stripe.checkout.sessions.retrieve(
-                canceled_customer.id,
-                {
-                    expand: ["line_items"],
-                });
+            const deleted_product_id = (canceled_customer as any).plan.product
 
             //Check for product type
             //if(session_del == process.env.stock_prod)
             
             try {
-                await UserDocument.findOneAndDelete({"email": deleted_customer.email}, {"$.subscriptions.products": session_del.line_items.data[0].price.product}).exec()
+                await UserDocument.findOneAndDelete({"email": deleted_customer.email, "subscriptions.products": deleted_product_id}).exec()
             }
             catch(err){
                 console.log(err);

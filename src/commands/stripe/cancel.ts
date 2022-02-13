@@ -2,7 +2,7 @@ const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discor
 const wait = require('util').promisify(setTimeout);
 import { Command } from 'discord.js';
 import { cancelRole } from '../../functions/functions'
-const User = require('../../data/models/user');
+import { UserDocument, UserSchemaType } from '../../data/models/user'
 
 export const cancel: Command = {
 	data: new SlashCommandBuilder()
@@ -17,7 +17,7 @@ export const cancel: Command = {
         
 
     run: async (interaction) => {
-		const user =  await User.findOne({"discord_id": interaction.member!.user.id}).exec();
+		const user =  await UserDocument.findOne({"discord_id": interaction.member!.user.id}).exec();
 		
 
 		const hasRole = await cancelRole(interaction.options.getString('package')!, user, interaction);

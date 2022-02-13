@@ -9,7 +9,7 @@ module.exports = {
         const command = client.commands.get(interaction.commandName);
 
         try {
-            await command!.execute(interaction);
+            await command!.run(interaction);
         } catch (error) {
             console.error(error);
             await interaction.reply({

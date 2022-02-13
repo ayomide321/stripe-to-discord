@@ -1,13 +1,34 @@
 const mongoose = require('mongoose');
-const mongoSchema = mongoose.Schema;
+import { Schema, Model, model, Document, Types } from 'mongoose';
 
 
 
 
+interface subscriptionsType extends Document {
+    activeToken: string,
+    product: string,
+    activated: boolean,
+    canceled: boolean,
+
+}
 
 //user schema
-var UserSchema = new mongoSchema({
-    subscriptions: [{
+interface UserSchemaType extends Document {
+    email: string,
+    discord_id: string,
+    roles: [id: string],
+    tempRoles: [id: string],
+    pendingChange: boolean,
+    totalReferred: number,
+    referral: string,
+    referred: string,
+    currentReferred: number,
+    veteranUser: boolean,
+    subscriptions: subscriptionsType;
+}
+
+var UserSchema = new Schema({
+    subscriptions: [new Schema<subscriptionsType>({
         _id: String,
         activeToken: String,
         product: String,
@@ -19,7 +40,7 @@ var UserSchema = new mongoSchema({
             type: Boolean,
             default: false,
         }
-    }],
+    })],
     discord_id: String,
     email: String,
     roles: [{
@@ -56,5 +77,7 @@ var UserSchema = new mongoSchema({
 
 });
 
-const UserDocument = mongoose.model('User', UserSchema);
-export = UserDocument
+type UserModelType = Model<UserSchemaType>;
+
+const UserDocument = model<UserSchemaType, UserModelType>('User', UserSchema);
+export { UserDocument, UserSchemaType }
