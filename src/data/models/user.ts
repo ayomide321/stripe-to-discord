@@ -5,6 +5,7 @@ import { Schema, Model, model, Document, Types } from 'mongoose';
 
 
 interface subscriptionsType extends Document {
+    id: Types.ObjectId,
     activeToken: string,
     product: string,
     activated: boolean,
@@ -24,7 +25,7 @@ interface UserSchemaType extends Document {
     referred: string,
     currentReferred: number,
     veteranUser: boolean,
-    subscriptions: subscriptionsType;
+    subscriptions: Types.Array<subscriptionsType>;
 }
 
 var UserSchema = new Schema({
@@ -78,6 +79,5 @@ var UserSchema = new Schema({
 });
 
 type UserModelType = Model<UserSchemaType>;
-
 const UserDocument = model<UserSchemaType, UserModelType>('User', UserSchema);
 export { UserDocument, UserSchemaType }

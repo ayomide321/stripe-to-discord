@@ -20,11 +20,8 @@ export const cancel: Command = {
 		const user =  await UserDocument.findOne({"discord_id": interaction.member!.user.id}).exec();
 		
 
-		const hasRole = await cancelRole(interaction.options.getString('package')!, user, interaction);
+		await cancelRole(interaction.options.getString('package')!, user, interaction);
 
-		if(hasRole) {
-			await interaction.editReply("Has Role!")
-		}
     } 
 }
 

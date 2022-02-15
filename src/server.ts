@@ -5,7 +5,6 @@ import express from 'express'
 import { CallbackError } from 'mongoose';
 import { Stripe } from 'stripe';
 import { UserDocument, UserSchemaType } from './data/models/user'
-const bodyParser = require('body-parser');
 const stripe = require('stripe')(process.env.stripeToken);
 const endpointSecret = 'whsec_3f8cf7b3f4edf4eec5161723cd5264dab16251ddbe4fbc52fb87d3be9cd9eab9'
 const app = express();
@@ -39,8 +38,8 @@ function makeid(length: number) {
     switch (event.type) {
 
         case 'checkout.session.completed':
-
             const paymentIntent: Stripe.PaymentIntent = event.data.object as Stripe.PaymentIntent;
+            console.log(paymentIntent)
             const customer = await stripe.customers.retrieve(paymentIntent.customer);
             const session = await stripe.checkout.sessions.retrieve(
             paymentIntent.id,
@@ -50,7 +49,7 @@ function makeid(length: number) {
 
             const newToken = makeid(6);
             const subscriptionDoc = {
-                _id: paymentIntent.id,
+                _id: (paymentIntent as any).subscription,
                 product: session.line_items.data[0].price.product,
                 activeToken: newToken,
                 activated: false,
@@ -60,23 +59,29 @@ function makeid(length: number) {
                 subscriptions: [subscriptionDoc],
             })
 
+            console.log(newCustomer)
+
             var productQuery = {
                 'email': customer.email,
-                'subscriptions.product': session.line_items.data[0].price.product,
             }
 
             await UserDocument.findOneAndUpdate(
             productQuery,
-            {'$setOnInsert': newCustomer},
-            //'$push': {'email.$.subscription': subscriptionDoc}},  
+            {'$setOnInsert': newCustomer},  
             {upsert: true, new: false},
             async function(err: CallbackError, doc: UserSchemaType | null) {
                 if(err || !doc) return "No User";
-                var productSub = doc.subscriptions._id(session.line_items.data[0].price.product)
-                console.log("An old identical subscription was found, deleting")
-                await stripe.subscriptions.update(productSub._id, { cancel_at_period_end: true });
-                productSub = subscriptionDoc
-                doc.save();
+                const existing_sub = doc.subscriptions.find( ({ product }) => product === session.line_items.data[0].price.product)
+                if(existing_sub){
+                    var productSub = existing_sub._id
+                    console.log("An old identical subscription was found, deleting")
+                    await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
+                    existing_sub.set(subscriptionDoc);
+                    doc.save();
+                } else {
+                    doc.subscriptions.push(subscriptionDoc)
+                    doc.save();
+                }
             }).exec();
             
             
@@ -144,13 +149,15 @@ function makeid(length: number) {
 
             const canceled_customer: Stripe.Subscription = event.data.object as Stripe.Subscription;
             const deleted_customer = await stripe.customers.retrieve(canceled_customer.customer);
-            const deleted_product_id = (canceled_customer as any).plan.product
+            const deleted_product_id = canceled_customer.id
 
             //Check for product type
             //if(session_del == process.env.stock_prod)
             
             try {
-                await UserDocument.findOneAndDelete({"email": deleted_customer.email, "subscriptions.products": deleted_product_id}).exec()
+                await UserDocument.updateOne({
+                    "email": deleted_customer.email, "subscriptions._id": deleted_product_id},
+                {$pull: { subscriptions: {_id: deleted_product_id}}}).exec()
             }
             catch(err){
                 console.log(err);
@@ -165,5 +172,5 @@ function makeid(length: number) {
 });
 
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`Server is live on port ${port}`));

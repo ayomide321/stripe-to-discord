@@ -1,7 +1,7 @@
-import DiscordJS, { ContextMenuInteraction , ApplicationCommandPermissionsManager } from 'discord.js'
+import DiscordJS, { ContextMenuInteraction } from 'discord.js'
 import { CallbackError } from 'mongoose';
 import { UserDocument, UserSchemaType } from '../data/models/user'
-const stripe = require('stripe')(process.env.stripeToken);;
+
 require('dotenv').config();
 
 
@@ -29,12 +29,14 @@ export function mapRole(){
 export async function checkRole(x: string, member: UserSchemaType){
     if(!member) return false
     
-    await UserDocument.findOne({
-        "email": member.email, "subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, 
+    let found = await UserDocument.findOne({
+        "email": member.email, "subscriptions.product": x}, 
         function(err: CallbackError, found: any){
             if(err) throw err;
-            return (found ? true : false);
+            console.log(found)
         }).exec()
+
+    return (found ? true : false);
 }
 
 export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction ){
@@ -58,35 +60,45 @@ export async function activateRole(x: string, code: string, interaction: Context
 
 export async function cancelRole(product: string, member: any, interaction: ContextMenuInteraction ){
     var boolcheckRole = await checkRole(product, member)
-    console.log("CHECKING ROLE" + boolcheckRole)
     if(boolcheckRole){
-        const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
+        //const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
+        const currentSub = await UserDocument.findOne({
+            "email": member.email, "subscriptions.product": product, "subscriptions.activated": true}, 
+            {_id: 0, "subscriptions.$": 1}).exec()
+        
+        if(!currentSub) interaction.reply({content: "You don't have an active subscription for this role.", ephemeral: true})
         try{
-            const subscription = stripe.subscriptions.retrieve(currentSub._id);
+            const sub_id = currentSub!.get('subscriptions._id').toString()
+            const stripe = require('stripe')(process.env.stripeToken);
+            const subscription = await stripe.subscriptions.retrieve(sub_id);
             if(subscription.cancel_at_period_end == true)
             {
                 interaction.reply({content: "Your subscription is already cancelled.", ephemeral: true})
 
             } else {
-                subscription.cancel_at_period_end = true;
+                await stripe.subscriptions.update(sub_id, { cancel_at_period_end: true });
                 interaction.reply({content: "Your subscription is set to cancel by the end of the month.", ephemeral: true})
                 //TODO SEND EMAIL FOR CANCELLATION
 
             }
-            subscription.save()
+            //subscription.save()
         } catch(err)
         {
             console.log(err)
             interaction.reply({content: "There was an error when trying to retreive your subscription, please try again or contact an admin.", ephemeral: true})
             return err;
         }
-
         
         
-        await member.findOneAndUpdate({"subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": true}, {$set: {"subscriptions.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
+        await UserDocument.findOneAndUpdate({
+            "email": member.email,
+            "subscriptions.product": product,
+             "subscriptions.canceled": false,
+              "subscriptions.activated": true},
+            {$set: {"subscriptions.$.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
         return true;
     } else {
-        interaction.reply({content: "You don't have a subscription for this role.", ephemeral: true})
+        interaction.reply({content: "You haven't purchased a subscription", ephemeral: true})
         return false;
     }
 }
@@ -95,7 +107,7 @@ export async function cancelRole(product: string, member: any, interaction: Cont
 export async function getActivationCode(x: any, product: string, interaction: ContextMenuInteraction ){
     let boolcheckRole = await checkRole(product, x)
     if(boolcheckRole){
-        x.findOne({"subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": false},
+        await UserDocument.findOne({"email": x.email, "subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": false},
             function(err: any, sub: any) {
                 if(err) {
                     console.log(err)
@@ -104,9 +116,9 @@ export async function getActivationCode(x: any, product: string, interaction: Co
                     interaction.reply({content: `Activation Code ${sub.activeToken}`, ephemeral: true})
                 }
             }
-        ).exec()
+        ).exec() 
     } else {
-        interaction.reply({content: "There is no subscription under this email.", ephemeral: true})
+        interaction.reply({content: "There is no pending subscription under this email.", ephemeral: true})
         return false;
     }
 }
