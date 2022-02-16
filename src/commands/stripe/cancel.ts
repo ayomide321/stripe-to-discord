@@ -3,6 +3,7 @@ const wait = require('util').promisify(setTimeout);
 import { Command } from 'discord.js';
 import { cancelRole } from '../../functions/functions'
 import { UserDocument, UserSchemaType } from '../../data/models/user'
+import { CallbackError } from 'mongoose';
 
 export const cancel: Command = {
 	data: new SlashCommandBuilder()
@@ -17,10 +18,22 @@ export const cancel: Command = {
         
 
     run: async (interaction) => {
-		const user =  await UserDocument.findOne({"discord_id": interaction.member!.user.id}).exec();
-		
+		const discord_id = interaction.member!.user.id
+		const packageName = interaction.options.getString('package')!
+		await UserDocument.findOne({"discord_id": discord_id}, 
 
-		await cancelRole(interaction.options.getString('package')!, user, interaction);
+		async function(err: CallbackError, user: UserSchemaType) {
+			console.log(user+"THIS IS CANCELLING USER")
+			if(err)  return "Error"
+            if(!user) {
+                await interaction.reply({content: 'There is no user with this email!', ephemeral: true})
+            }
+			
+			cancelRole(packageName, user, interaction);
+		}).exec();
+
+
+		
 
     } 
 }

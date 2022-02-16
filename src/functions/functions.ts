@@ -1,23 +1,22 @@
-import DiscordJS, { ContextMenuInteraction } from 'discord.js'
+import DiscordJS, { ContextMenuInteraction, GuildApplicationCommandPermissionData, } from 'discord.js'
 import { CallbackError } from 'mongoose';
 import { UserDocument, UserSchemaType } from '../data/models/user'
 
 require('dotenv').config();
 
 
-export const permissionsList = [
+
+export const fullPermissions: GuildApplicationCommandPermissionData[] = [
 	{
-		id: process.env.moderator_role_1,
-		type: 'ROLE',
-		permission: true,
-	},
-    {
-		id: process.env.moderator_role_2,
-		type: 'ROLE',
-		permission: true,
+		id: '941727324083212363',
+		permissions: [{
+			id: process.env.moderator_role_1!,
+			type: 'ROLE',
+			permission: true,
+		},
+    ],
 	},
 ];
-
 
 export function mapRole(){
     let roleMap = new Map<string, string>();
@@ -31,9 +30,8 @@ export async function checkRole(x: string, member: UserSchemaType){
     
     let found = await UserDocument.findOne({
         "email": member.email, "subscriptions.product": x}, 
-        function(err: CallbackError, found: any){
+        function(err: CallbackError, found: UserSchemaType){
             if(err) throw err;
-            console.log(found)
         }).exec()
 
     return (found ? true : false);
@@ -43,7 +41,6 @@ export async function activateRole(x: string, code: string, interaction: Context
     try {
         const user = await UserDocument.findOneAndUpdate({"subscriptions.product": x, "subscriptions.activeToken": code, "subscriptions.activated": false}, {$set: {"subscriptions.$.activated": true, "subscriptions.$.activeToken": "", "discord_id": interaction.member!.user.id}}, { upsert: false, returnDocument: 'after', useFindAndModify: false }).exec()
         if(user){
-            console.log(user)
             assignRole(user ,interaction.member as DiscordJS.GuildMember)
             interaction.reply({content: "Your subscription has been activated.", ephemeral: true})
             user.save()
@@ -58,13 +55,14 @@ export async function activateRole(x: string, code: string, interaction: Context
     }
 };
 
-export async function cancelRole(product: string, member: any, interaction: ContextMenuInteraction ){
+export async function cancelRole(product: string, member: UserSchemaType, interaction: ContextMenuInteraction ){
     var boolcheckRole = await checkRole(product, member)
     if(boolcheckRole){
         //const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
         const currentSub = await UserDocument.findOne({
             "email": member.email, "subscriptions.product": product, "subscriptions.activated": true}, 
             {_id: 0, "subscriptions.$": 1}).exec()
+        
         
         if(!currentSub) interaction.reply({content: "You don't have an active subscription for this role.", ephemeral: true})
         try{
@@ -73,7 +71,7 @@ export async function cancelRole(product: string, member: any, interaction: Cont
             const subscription = await stripe.subscriptions.retrieve(sub_id);
             if(subscription.cancel_at_period_end == true)
             {
-                interaction.reply({content: "Your subscription is already cancelled.", ephemeral: true})
+                interaction.reply({content: "Your subscription is already set to cancelled.", ephemeral: true})
 
             } else {
                 await stripe.subscriptions.update(sub_id, { cancel_at_period_end: true });
@@ -85,6 +83,7 @@ export async function cancelRole(product: string, member: any, interaction: Cont
         } catch(err)
         {
             console.log(err)
+            console.log(currentSub + "THIS IS THE FOUND SUBSCRIPTIONS")
             interaction.reply({content: "There was an error when trying to retreive your subscription, please try again or contact an admin.", ephemeral: true})
             return err;
         }
@@ -104,16 +103,20 @@ export async function cancelRole(product: string, member: any, interaction: Cont
 }
 
 //TODO: MAKE ADMIN FUNCTION
-export async function getActivationCode(x: any, product: string, interaction: ContextMenuInteraction ){
-    let boolcheckRole = await checkRole(product, x)
+export async function getActivationCode(x: UserSchemaType, productID: string, interaction: ContextMenuInteraction ){
+    let boolcheckRole = await checkRole(productID, x)
     if(boolcheckRole){
-        await UserDocument.findOne({"email": x.email, "subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": false},
-            function(err: any, sub: any) {
+        await UserDocument.findOne({"email": x.email, "subscriptions.product": productID, "subscriptions.canceled": false, "subscriptions.activated": false},
+            function(err: CallbackError, sub: UserSchemaType) {
                 if(err) {
                     console.log(err)
                 }
+                if(!sub){
+                    interaction.reply({content: `There is no inactive subscription for this product`, ephemeral: true})
+                }
                 else {
-                    interaction.reply({content: `Activation Code ${sub.activeToken}`, ephemeral: true})
+                    const token = sub.subscriptions.find(({ product }) => product === productID)!.activeToken
+                    interaction.reply({content: `${x.email} activation token: ${token}`, ephemeral: true})
                 }
             }
         ).exec() 
@@ -123,7 +126,7 @@ export async function getActivationCode(x: any, product: string, interaction: Co
     }
 }
 
-export function assignRole(x: any, member: DiscordJS.GuildMember) {
+export function assignRole(x: UserSchemaType, member: DiscordJS.GuildMember) {
     if(!x) return;
 	const roleMap = mapRole();
     const unverified_role = member.guild.roles.cache.get(process.env.unverified_role!)!
@@ -151,11 +154,11 @@ export function assignServerRoles(client: DiscordJS.Client){
     const Guild = client.guilds.cache.get(process.env.guild_id!)!;
 	Guild.members.cache.forEach(async (member: DiscordJS.GuildMember) => {
 		const currentMember = await Guild.members.fetch(member.id)!;
-		const currentUser = await UserDocument.findOne({"discord_id": member.id}).exec();
-		try{
-			assignRole(currentUser, currentMember)
-		} catch(err) {
-			console.log(err)
-		}
+		await UserDocument.findOne({"discord_id": member.id},
+        function(err: CallbackError, user: UserSchemaType) {
+			if(err || !user) return "No User"
+			assignRole(user, currentMember)
+		}).exec();
+
 	});
 }
