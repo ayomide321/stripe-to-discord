@@ -72,15 +72,19 @@ function makeid(length: number) {
             async function(err: CallbackError, doc: UserSchemaType | null) {
                 if(err || !doc) return "No User";
                 const existing_sub = doc.subscriptions.find( ({ product }) => product === session.line_items.data[0].price.product)
+                console.log(existing_sub+"THIS IS THE EXISTING SUBSCRIPTION")
+                console.log(doc+"THIS IS THE DOCUMENT IN INITIAL QUERY")
                 if(existing_sub){
                     var productSub = existing_sub._id
                     console.log("An old identical subscription was found, deleting")
                     await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
                     existing_sub.set(subscriptionDoc);
                     doc.save();
+                    return
                 } else {
                     doc.subscriptions.push(subscriptionDoc)
                     doc.save();
+                    return
                 }
             }).exec();
             

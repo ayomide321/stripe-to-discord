@@ -1,4 +1,4 @@
-import { Collection, Message, ContextMenuInteraction  } from "discord.js";
+import { Collection, Message, ContextMenuInteraction, ApplicationCommandPermissionData  } from "discord.js";
 import { SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "@discordjs/builders";
 
 declare module 'stripe' {
@@ -31,11 +31,6 @@ declare module "discord.js" {
         export interface Command {
             data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
             run: (interaction: ContextMenuInteraction ) => Promise<void>;
-            permissions?: {
-                id: string;
-                type: string;
-                permission: boolean;
-            }[] = [];
           }
     }
     export {}

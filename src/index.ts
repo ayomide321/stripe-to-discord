@@ -1,13 +1,13 @@
 /// <reference path="../client.d.ts" />
 
-import DiscordJS, { Intents, Collection, Client, TextChannel } from 'discord.js'
+import DiscordJS, { Intents, Collection, Client, TextChannel, ApplicationCommandPermissionData } from 'discord.js'
 import fs from 'fs'
-import mongoose from 'mongoose';
-import { assignRole, assignServerRoles } from './functions/functions'
+import mongoose, { CallbackError } from 'mongoose';
+import { assignRole, assignServerRoles, fullPermissions } from './functions/functions'
 require('dotenv').config();
 import { UserDocument, UserSchemaType } from './data/models/user'
 
-export const client: Client = new DiscordJS.Client({ intents: [Intents.FLAGS.GUILDS] });
+export const client: Client = new DiscordJS.Client({ intents: [Intents.FLAGS.GUILDS, 'GUILD_MESSAGES', 'GUILDS'] });
 
 mongoose.connect(process.env.mongoURI!,
     { useNewUrlParser: true, useUnifiedTopology: true },
@@ -25,7 +25,7 @@ const commandFolders = fs.readdirSync('./src/commands');
 
 
 
-client.on('ready',  () => {
+client.on('ready', async () => {
 	console.log('Ready!')
 	for (const  file of functions) {
 		if(file != "functions.ts"){
@@ -34,6 +34,10 @@ client.on('ready',  () => {
 	}
 	client.handleEvents(eventFiles, './src/events');
 	client.handleCommands(commandFolders, './src/commands');
+	//await client.application?.commands.permissions.set({ permissionsList } as any);
+	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
+	await client.guilds.cache.get(process.env.guild_id!)?.commands.permissions.set({ fullPermissions });
+	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch("941727324083212363"))
 	assignServerRoles(client)
 });
 
@@ -43,17 +47,20 @@ client.on('guildMemberAdd', member => {
     member.roles.add(process.env.unverified_role!)
 });
 
-client.on('message', async (message) =>{
+client.on('messageCreate', async (message) =>{
 
 	const member = await client.guilds.cache.get(process.env.guild_id!)!.members.fetch(message.author.id)!;
-	const user =  await UserDocument.findOne({"discord_id": message.author.id}).exec();
+	await UserDocument.findOne({"discord_id": message.author.id}, 
+		function(err: CallbackError, user: UserSchemaType) {
+			if(err) throw err 
+			if(!user) {
+				console.log("No user was found")
+				return
+			}
+			assignRole(user, member)
+		}).exec();
 
-	
-	try{
-		assignRole(user, member)
-	} catch(err) {
-		console.log(err)
-	}
+
 	
 })
 

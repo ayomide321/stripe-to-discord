@@ -13,18 +13,15 @@ module.exports = (client: Client) => {
     client.handleCommands = async (commandFolders: string[], path: string) => {
         //initalize commandArray
         client.commandArray = []
+        
         for (const folder of commandFolders) {
             const commandFiles = fs.readdirSync(`${path}/${folder}`).filter((file: string) => file.endsWith('.ts'));
 
             for (const file of commandFiles) {
                 //Initialize Command
-                let command = require(`../commands/${folder}/${file}`);
+                let command: Command = require(`../commands/${folder}/${file}`);
 
                 //Initialize command permissions 
-                command.permissions = permissionsList
-
-
-                console.log(command.permissions)
                 client.commands.set(command.data.name, command)
                 client.commandArray.push(command.data.toJSON());
                 

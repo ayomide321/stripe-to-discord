@@ -80,4 +80,4 @@ var UserSchema = new Schema({
 
 type UserModelType = Model<UserSchemaType>;
 const UserDocument = model<UserSchemaType, UserModelType>('User', UserSchema);
-export { UserDocument, UserSchemaType }
+export { UserDocument, UserSchemaType, subscriptionsType }
