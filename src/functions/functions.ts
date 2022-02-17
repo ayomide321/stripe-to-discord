@@ -1,48 +1,46 @@
-import DiscordJS, { ContextMenuInteraction } from 'discord.js'
-import  UserDocument  = require('../data/models/user');
-const stripe = require('stripe')(process.env.stripeToken);
-const si = require('stock-info');
+import DiscordJS, { ContextMenuInteraction, GuildApplicationCommandPermissionData, } from 'discord.js'
+import { CallbackError } from 'mongoose';
+import { UserDocument, UserSchemaType } from '../data/models/user'
+
 require('dotenv').config();
 
 
-export const permissions = [
+
+export const fullPermissions: GuildApplicationCommandPermissionData[] = [
 	{
-		id: process.env.moderator_role_1,
-		type: 'ROLE',
-		permission: true,
-	},
-    {
-		id: process.env.moderator_role_2,
-		type: 'ROLE',
-		permission: true,
+		id: '941727324083212363',
+		permissions: [{
+			id: process.env.moderator_role_1!,
+			type: 'ROLE',
+			permission: true,
+		},
+    ],
 	},
 ];
-
 
 export function mapRole(){
     let roleMap = new Map<string, string>();
 	roleMap.set(process.env.product_1!, process.env.role_1!)
 	roleMap.set(process.env.product_2!, process.env.role_2!)
-	roleMap.set(process.env.product_3!, process.env.role_3!)
     return roleMap
 }
 
-export function checkRole(x: string, member: any){
+export async function checkRole(x: string, member: UserSchemaType){
     if(!member) return false
-    const memberRole = member.findOne({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true})
-    if(memberRole)
-    {
-        return true
-    } else {
-        return false
-    }
+    
+    let found = await UserDocument.findOne({
+        "email": member.email, "subscriptions.product": x}, 
+        function(err: CallbackError, found: UserSchemaType){
+            if(err) throw err;
+        }).exec()
+
+    return (found ? true : false);
 }
 
-export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction){
+export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction ){
     try {
         const user = await UserDocument.findOneAndUpdate({"subscriptions.product": x, "subscriptions.activeToken": code, "subscriptions.activated": false}, {$set: {"subscriptions.$.activated": true, "subscriptions.$.activeToken": "", "discord_id": interaction.member!.user.id}}, { upsert: false, returnDocument: 'after', useFindAndModify: false }).exec()
         if(user){
-            console.log(user)
             assignRole(user ,interaction.member as DiscordJS.GuildMember)
             interaction.reply({content: "Your subscription has been activated.", ephemeral: true})
             user.save()
@@ -57,57 +55,77 @@ export async function activateRole(x: string, code: string, interaction: Context
     }
 };
 
-export async function cancelRole(x: string, member: any, interaction: ContextMenuInteraction){
-    if(checkRole(x, member)){
-        const currentSub = await member.findOne({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}).exec()
+export async function cancelRole(product: string, member: UserSchemaType, interaction: ContextMenuInteraction ){
+    var boolcheckRole = await checkRole(product, member)
+    if(boolcheckRole){
+        //const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
+        const currentSub = await UserDocument.findOne({
+            "email": member.email, "subscriptions.product": product, "subscriptions.activated": true}, 
+            {_id: 0, "subscriptions.$": 1}).exec()
+        
+        
+        if(!currentSub) interaction.reply({content: "You don't have an active subscription for this role.", ephemeral: true})
         try{
-            const subscription = stripe.subscriptions.retrieve(currentSub._id);
+            const sub_id = currentSub!.get('subscriptions._id').toString()
+            const stripe = require('stripe')(process.env.stripeToken);
+            const subscription = await stripe.subscriptions.retrieve(sub_id);
             if(subscription.cancel_at_period_end == true)
             {
-                interaction.reply({content: "Your subscription is already cancelled.", ephemeral: true})
-                return false;
+                interaction.reply({content: "Your subscription is already set to cancelled.", ephemeral: true})
+
             } else {
+                await stripe.subscriptions.update(sub_id, { cancel_at_period_end: true });
+                interaction.reply({content: "Your subscription is set to cancel by the end of the month.", ephemeral: true})
+                //TODO SEND EMAIL FOR CANCELLATION
 
             }
-            subscription.save()
+            //subscription.save()
         } catch(err)
         {
             console.log(err)
             interaction.reply({content: "There was an error when trying to retreive your subscription, please try again or contact an admin.", ephemeral: true})
             return err;
         }
-
         
         
-        await member.findOneAndUpdate({"subscriptions.product": x, "subscriptions.canceled": false, "subscriptions.activated": true}, {$set: {"subscriptions.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
-        interaction.editReply({})
+        await UserDocument.findOneAndUpdate({
+            "email": member.email,
+            "subscriptions.product": product,
+             "subscriptions.canceled": false,
+              "subscriptions.activated": true},
+            {$set: {"subscriptions.$.canceled":true}}, { upsert: false, returnDocument: 'after',}).exec()
         return true;
     } else {
-        interaction.reply({content: "You don't have a subscription, please try again.", ephemeral: true})
+        interaction.reply({content: "You haven't purchased a subscription", ephemeral: true})
         return false;
     }
 }
 
-export async function getActivationCode(x: any, product: string, interaction: ContextMenuInteraction){
-
-    if(checkRole(product, x)){
-        x.findOne({"subscriptions.product": product, "subscriptions.canceled": false, "subscriptions.activated": false},
-            function(err: any, sub: any) {
+//TODO: MAKE ADMIN FUNCTION
+export async function getActivationCode(x: UserSchemaType, productID: string, interaction: ContextMenuInteraction ){
+    let boolcheckRole = await checkRole(productID, x)
+    if(boolcheckRole){
+        await UserDocument.findOne({"email": x.email, "subscriptions.product": productID, "subscriptions.canceled": false, "subscriptions.activated": false},
+            function(err: CallbackError, sub: UserSchemaType) {
                 if(err) {
                     console.log(err)
                 }
+                if(!sub){
+                    interaction.reply({content: `There is no inactive subscription for this product`, ephemeral: true})
+                }
                 else {
-                    interaction.reply({content: `Activation Code ${sub.activeToken}`, ephemeral: true})
+                    const token = sub.subscriptions.find(({ product }) => product === productID)!.activeToken
+                    interaction.reply({content: `${x.email} activation token: ${token}`, ephemeral: true})
                 }
             }
-        ).exec()
+        ).exec() 
     } else {
-        interaction.reply({content: "There is no subscription under this email.", ephemeral: true})
+        interaction.reply({content: "There is no pending subscription under this email.", ephemeral: true})
         return false;
     }
 }
 
-export function assignRole(x: any, member: DiscordJS.GuildMember) {
+export function assignRole(x: UserSchemaType, member: DiscordJS.GuildMember) {
     if(!x) return;
 	const roleMap = mapRole();
     const unverified_role = member.guild.roles.cache.get(process.env.unverified_role!)!
@@ -135,23 +153,11 @@ export function assignServerRoles(client: DiscordJS.Client){
     const Guild = client.guilds.cache.get(process.env.guild_id!)!;
 	Guild.members.cache.forEach(async (member: DiscordJS.GuildMember) => {
 		const currentMember = await Guild.members.fetch(member.id)!;
-		const currentUser = await UserDocument.findOne({"discord_id": member.id}).exec();
-		try{
-			assignRole(currentUser, currentMember)
-		} catch(err) {
-			console.log(err)
-		}
-	});
-}
+		await UserDocument.findOne({"discord_id": member.id},
+        function(err: CallbackError, user: UserSchemaType) {
+			if(err || !user) return "No User"
+			assignRole(user, currentMember)
+		}).exec();
 
-export async function getTicker(ticker: string, interaction: ContextMenuInteraction){
-    const data = await si.getSingleStockInfo(ticker);
-    console.log(data)
-    const message = `**Name:** ${data.longName}\n**Symbol:** ${data.symbol}\nDaily Change: $${data.regularMarketChange}\nPercent Change: ${data.regularMarketChangePercent}%\n `
-    if(data) {
-        interaction.reply({content: message , ephemeral: true})
-    } else {
-        interaction.reply({content: "This is not a valid ticker symbol.", ephemeral: true})
-        return false;
-    }
+	});
 }

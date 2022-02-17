@@ -1,10 +1,12 @@
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 const wait = require('util').promisify(setTimeout);
-import { ContextMenuInteraction } from 'discord.js';
+import { Command } from 'discord.js';
 import { cancelRole } from '../../functions/functions'
-const User = require('../../data/models/user');
+import { UserDocument, UserSchemaType } from '../../data/models/user'
+import { CallbackError } from 'mongoose';
 
-const data = new SlashCommandBuilder()
+export const cancel: Command = {
+	data: new SlashCommandBuilder()
 	.setName('cancel')
 	.setDescription('Cancel your subscription!')
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
@@ -12,26 +14,23 @@ const data = new SlashCommandBuilder()
 			.setDescription('The product category')
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2)
-			.addChoice('sports', process.env.product_3));
+			.addChoice('forex', process.env.product_2)),
         
 
-module.exports = {
-    data: data,
-    async execute(interaction: ContextMenuInteraction) {
-		const user =  await User.findOne({"discord_id": interaction.member!.user.id}).exec();
+    run: async (interaction) => {
+		const discord_id = interaction.member!.user.id
+		const packageName = interaction.options.getString('package')!
 		
-
-		const hasRole = await cancelRole(interaction.options.getString('package')!, user, interaction);
-
-		if(hasRole) {
-			await interaction.editReply("Has Role!")
-		}
-
-
-
-
+		await UserDocument.findOne({"discord_id": discord_id}, 
+		async function(err: CallbackError, user: UserSchemaType) {
+			if(err)  return "Error"
+            if(!user) {
+                await interaction.reply({content: 'There is no user with this email!', ephemeral: true})
+				return
+            }
+			cancelRole(packageName, user, interaction);
+		}).exec()
     } 
 }
 
-export {}
+module.exports = cancel
