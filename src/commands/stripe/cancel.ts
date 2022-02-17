@@ -20,21 +20,16 @@ export const cancel: Command = {
     run: async (interaction) => {
 		const discord_id = interaction.member!.user.id
 		const packageName = interaction.options.getString('package')!
+		
 		await UserDocument.findOne({"discord_id": discord_id}, 
-
 		async function(err: CallbackError, user: UserSchemaType) {
-			console.log(user+"THIS IS CANCELLING USER")
 			if(err)  return "Error"
             if(!user) {
                 await interaction.reply({content: 'There is no user with this email!', ephemeral: true})
+				return
             }
-			
 			cancelRole(packageName, user, interaction);
-		}).exec();
-
-
-		
-
+		}).exec()
     } 
 }
 

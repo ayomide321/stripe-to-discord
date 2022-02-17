@@ -22,18 +22,17 @@ const access: Command = {
             .setRequired(true)),
 
     run: async (interaction) => {
-        console.log(interaction.options.getString('email') + "THIS IS EMAIL IM SEARCHING FOR")
         const email = interaction.options.getString('email')!
+        
         await UserDocument.findOne({"email": email},
         async function(err: CallbackError, user: UserSchemaType) {
 			if(err)  return "Error"
             if(!user) {
                 await interaction.reply({content: 'There is no user with this email!', ephemeral: true})
+                return
             }
 			getActivationCode(user, interaction.options.getString('package')!, interaction)
-		}).exec();
-
-        
+		}).exec(); 
     } 
 }
 

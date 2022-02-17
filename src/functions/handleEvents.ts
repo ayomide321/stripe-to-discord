@@ -1,5 +1,6 @@
-import { Client } from 'discord.js'
+/// <reference path="../../client.d.ts" />
 
+import { Client } from 'discord.js'
 
 module.exports = (client: Client) => {
     client.handleEvents = async (eventFiles: string[], path: string) => {

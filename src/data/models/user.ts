@@ -1,8 +1,4 @@
-const mongoose = require('mongoose');
 import { Schema, Model, model, Document, Types } from 'mongoose';
-
-
-
 
 interface subscriptionsType extends Document {
     id: Types.ObjectId,
@@ -10,7 +6,6 @@ interface subscriptionsType extends Document {
     product: string,
     activated: boolean,
     canceled: boolean,
-
 }
 
 //user schema

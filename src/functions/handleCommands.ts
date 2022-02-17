@@ -1,13 +1,11 @@
 /// <reference path="../../client.d.ts" />
 
 import { Command, Client } from 'discord.js'
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const { permissionsList } = require('./functions.ts')
-const fs = require('fs');
 require('dotenv').config();
 
-
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const fs = require('fs');
 
 module.exports = (client: Client) => {
     client.handleCommands = async (commandFolders: string[], path: string) => {

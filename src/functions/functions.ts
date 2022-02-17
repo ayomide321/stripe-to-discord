@@ -83,7 +83,6 @@ export async function cancelRole(product: string, member: UserSchemaType, intera
         } catch(err)
         {
             console.log(err)
-            console.log(currentSub + "THIS IS THE FOUND SUBSCRIPTIONS")
             interaction.reply({content: "There was an error when trying to retreive your subscription, please try again or contact an admin.", ephemeral: true})
             return err;
         }

@@ -1,15 +1,14 @@
-require('dotenv').config();
-
-import { User } from 'discord.js';
 import express from 'express'
 import { CallbackError } from 'mongoose';
 import { Stripe } from 'stripe';
 import { UserDocument, UserSchemaType } from './data/models/user'
+require('dotenv').config();
+
 const stripe = require('stripe')(process.env.stripeToken);
 const endpointSecret = 'whsec_3f8cf7b3f4edf4eec5161723cd5264dab16251ddbe4fbc52fb87d3be9cd9eab9'
 const app = express();
 
-
+//Token generator function
 function makeid(length: number) {
     var result           = '';
     var characters       = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%&';
@@ -20,8 +19,8 @@ function makeid(length: number) {
     return result;
  }
 
-
- app.post('/webhook', express.raw({type: 'application/json'}), async (request: express.Request, response: express.Response) => {
+// Stripe webhooks
+app.post('/webhook', express.raw({type: 'application/json'}), async (request: express.Request, response: express.Response) => {
     const sig = request.headers['stripe-signature'];
 
     let event: Stripe.Event;
@@ -39,7 +38,6 @@ function makeid(length: number) {
 
         case 'checkout.session.completed':
             const paymentIntent: Stripe.PaymentIntent = event.data.object as Stripe.PaymentIntent;
-            console.log(paymentIntent)
             const customer = await stripe.customers.retrieve(paymentIntent.customer);
             const session = await stripe.checkout.sessions.retrieve(
             paymentIntent.id,
@@ -59,8 +57,6 @@ function makeid(length: number) {
                 subscriptions: [subscriptionDoc],
             })
 
-            console.log(newCustomer)
-
             var productQuery = {
                 'email': customer.email,
             }
@@ -72,8 +68,6 @@ function makeid(length: number) {
             async function(err: CallbackError, doc: UserSchemaType | null) {
                 if(err || !doc) return "No User";
                 const existing_sub = doc.subscriptions.find( ({ product }) => product === session.line_items.data[0].price.product)
-                console.log(existing_sub+"THIS IS THE EXISTING SUBSCRIPTION")
-                console.log(doc+"THIS IS THE DOCUMENT IN INITIAL QUERY")
                 if(existing_sub){
                     var productSub = existing_sub._id
                     console.log("An old identical subscription was found, deleting")
@@ -99,10 +93,10 @@ function makeid(length: number) {
             //send verification emails
             //mailgun.sendMail(user.email, "verification_template", user.activeToken)
             
-            console.log("Creating new subscription");
+            console.log("Created new subscription");
             break;
 
-        // ... handle other event types
+     
         case 'customer.subscription.updated':
             const updateObject: Stripe.Subscription = event.data.object as Stripe.Subscription;
                 
@@ -114,7 +108,7 @@ function makeid(length: number) {
             if(userExists || updated_cus.cancel_at_period_end == true){
                 if(updated_cus.cancel_at_period_end == true)
                 {
-                    console.log("User is set to cancel")
+
                     await UserDocument.findOneAndUpdate({
                         "email": updated_cus.email,
                         "subscriptions.product": product_id, 
@@ -123,7 +117,9 @@ function makeid(length: number) {
                         { upsert: false, returnDocument: 'after'},
                         function(err: CallbackError, doc: UserSchemaType | null) {
                             if(err) throw err;
-                            console.log(doc)
+                            
+                            //SEND EMAIL THAT USER WAS CANCELED
+
                             //mailgun.sendMail(updated_cus.email, "set_cancel")
                         }); 
                 } 
@@ -144,7 +140,6 @@ function makeid(length: number) {
                     //SEND EMAIL THAT A NEW ACCOUNT WAS CREATED
                     
                 )
-                console.log('ACCOUNT WAS JUST CREATED FOR EXISTING MEMBER')
 
             }
             break;
@@ -174,7 +169,6 @@ function makeid(length: number) {
     // Return a response to acknowledge receipt of the event
     response.json({received: true});
 });
-
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`Server is live on port ${port}`));
