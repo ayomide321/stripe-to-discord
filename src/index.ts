@@ -1,28 +1,30 @@
 /// <reference path="../client.d.ts" />
 
-import DiscordJS, { Intents, Collection, Client, TextChannel, ApplicationCommandPermissionData } from 'discord.js'
-import fs from 'fs'
+//Imported functions
+import DiscordJS, { Intents, Collection, Client, TextChannel } from 'discord.js'
 import mongoose, { CallbackError } from 'mongoose';
-import { assignRole, assignServerRoles, fullPermissions } from './functions/functions'
+import fs from 'fs'
 require('dotenv').config();
+
+//Personal functions
+import { assignRole, assignServerRoles, fullPermissions } from './functions/functions'
 import { UserDocument, UserSchemaType } from './data/models/user'
 
+//Client Intents
 export const client: Client = new DiscordJS.Client({ intents: [Intents.FLAGS.GUILDS, 'GUILD_MESSAGES', 'GUILDS'] });
 
+//Mongoose Connection
 mongoose.connect(process.env.mongoURI!,
     { useNewUrlParser: true, useUnifiedTopology: true },
      (err) => (err)
      ? console.log('Failed to connect')
      : console.log('Connected to database'));
 
-
+//Command initialization
 client.commands = new Collection();
-
 const functions = fs.readdirSync('./src/functions').filter((file: string) => file.endsWith('.ts'));
 const eventFiles = fs.readdirSync('./src/events').filter((file: string) => file.endsWith('.ts'));
 const commandFolders = fs.readdirSync('./src/commands');
-
-
 
 
 client.on('ready', async () => {
@@ -34,8 +36,6 @@ client.on('ready', async () => {
 	}
 	client.handleEvents(eventFiles, './src/events');
 	client.handleCommands(commandFolders, './src/commands');
-	//await client.application?.commands.permissions.set({ permissionsList } as any);
-	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
 	await client.guilds.cache.get(process.env.guild_id!)?.commands.permissions.set({ fullPermissions });
 	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch("941727324083212363"))
 	assignServerRoles(client)
@@ -58,13 +58,8 @@ client.on('messageCreate', async (message) =>{
 				return
 			}
 			assignRole(user, member)
-		}).exec();
-
-
-	
+		}).exec();	
 })
-
-
 
 client.login(process.env.TOKEN);
 require ('./server')
