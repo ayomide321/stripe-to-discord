@@ -12,6 +12,7 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "glob": "^7.1.7",
+    "mailgun-js": "^0.22.0",
     "node-fetch": "^3.0.0",
     "stock-info": "^1.2.0",
     "stripe": "^8.174.0",

@@ -4,11 +4,12 @@
 import DiscordJS, { Intents, Collection, Client, TextChannel } from 'discord.js'
 import mongoose, { CallbackError } from 'mongoose';
 import fs from 'fs'
-require('dotenv').config();
 
 //Personal functions
 import { assignRole, assignServerRoles, fullPermissions } from './functions/functions'
 import { UserDocument, UserSchemaType } from './data/models/user'
+
+require('dotenv').config();
 
 //Client Intents
 export const client: Client = new DiscordJS.Client({ intents: [Intents.FLAGS.GUILDS, 'GUILD_MESSAGES', 'GUILDS'] });
@@ -30,7 +31,7 @@ const commandFolders = fs.readdirSync('./src/commands');
 client.on('ready', async () => {
 	console.log('Ready!')
 	for (const  file of functions) {
-		if(file != "functions.ts"){
+		if(file != "functions.ts" && file != "mail.ts"){
 			require(`./functions/${file}`)(client);
 		}
 	}

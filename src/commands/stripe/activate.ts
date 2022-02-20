@@ -1,3 +1,5 @@
+/// <reference path="../../../client.d.ts" />
+
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 const wait = require('util').promisify(setTimeout);
 import { Command } from 'discord.js';
@@ -14,7 +16,7 @@ export const activate: Command = {
 			.setDescription('The gif category')
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2))
+			.addChoice('sports', process.env.product_2))
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('activation')
 			.setDescription('Activation code for package')

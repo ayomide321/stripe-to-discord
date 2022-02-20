@@ -1,3 +1,5 @@
+/// <reference path="../../../client.d.ts" />
+
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 import { Command } from 'discord.js';
 import { getActivationCode } from '../../functions/functions';
@@ -15,7 +17,7 @@ const access: Command = {
 			.setDescription('The gif category')
 			.setRequired(true)
 			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2))
+			.addChoice('sports', process.env.product_2))
     .addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
         option.setName('email')
             .setDescription('Enter the email whose activation code you want to access')

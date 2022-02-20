@@ -2,6 +2,7 @@ import express from 'express'
 import { CallbackError } from 'mongoose';
 import { Stripe } from 'stripe';
 import { UserDocument, UserSchemaType } from './data/models/user'
+import sendMail from './functions/mail'
 require('dotenv').config();
 
 const stripe = require('stripe')(process.env.stripeToken);
@@ -61,6 +62,8 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
                 'email': customer.email,
             }
 
+            sendMail(newCustomer.email, "verification", newToken)
+
             await UserDocument.findOneAndUpdate(
             productQuery,
             {'$setOnInsert': newCustomer},  
@@ -73,7 +76,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
                     console.log("An old identical subscription was found, deleting")
                     await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
                     existing_sub.set(subscriptionDoc);
-                    doc.save();
+                    doc!.save();
                     return
                 } else {
                     doc.subscriptions.push(subscriptionDoc)
@@ -82,6 +85,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
                 }
             }).exec();
             
+
             
             //Check for product type
             //if(session.line_items.data[0].price.product == process.env.stock_prod)
