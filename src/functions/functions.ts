@@ -20,12 +20,13 @@ export const fullPermissions: GuildApplicationCommandPermissionData[] = [
 
 export function mapRole(){
     let roleMap = new Map<string, string>();
-	roleMap.set(process.env.product_1!, process.env.role_1!)
+	roleMap.set(process.env.product_1_0!, process.env.role_1!)
+    roleMap.set(process.env.product_1_1!, process.env.role_1!)
 	roleMap.set(process.env.product_2!, process.env.role_2!)
     return roleMap
 }
 
-export async function checkRole(x: string, member: UserSchemaType){
+export async function checkRole(x: string | string[], member: UserSchemaType){
     if(!member) return false
     
     let found = await UserDocument.findOne({
@@ -37,10 +38,13 @@ export async function checkRole(x: string, member: UserSchemaType){
     return (found ? true : false);
 }
 
-export async function activateRole(x: string, code: string, interaction: ContextMenuInteraction ){
+export async function activateRole(x: Array<string>, code: string, interaction: ContextMenuInteraction ){
     try {
-        const user = await UserDocument.findOneAndUpdate({"subscriptions.product": x, "subscriptions.activeToken": code, "subscriptions.activated": false}, {$set: {"subscriptions.$.activated": true, "subscriptions.$.activeToken": "", "discord_id": interaction.member!.user.id}}, { upsert: false, returnDocument: 'after', useFindAndModify: false }).exec()
+        const user = await UserDocument.findOneAndUpdate( {"subscriptions" : {$elemMatch : {"product": x, "activeToken": code, "activated": false}}},
+        {$set: {"subscriptions.$.activated": true, "subscriptions.$.activeToken": "", "discord_id": interaction.member!.user.id}},
+        { upsert: false, useFindAndModify: false }).exec()
         if(user){
+            console.log(user)
             assignRole(user ,interaction.member as DiscordJS.GuildMember)
             interaction.reply({content: "Your subscription has been activated.", ephemeral: true})
             user.save()
@@ -55,7 +59,7 @@ export async function activateRole(x: string, code: string, interaction: Context
     }
 };
 
-export async function cancelRole(product: string, member: UserSchemaType, interaction: ContextMenuInteraction ){
+export async function cancelRole(product: string[], member: UserSchemaType, interaction: ContextMenuInteraction ){
     var boolcheckRole = await checkRole(product, member)
     if(boolcheckRole){
         //const currentSub = await member.subscriptions.findOne({"product": product, "activated": true}).exec()
@@ -64,6 +68,7 @@ export async function cancelRole(product: string, member: UserSchemaType, intera
             {_id: 0, "subscriptions.$": 1}).exec()
         
         
+        console.log(currentSub)
         if(!currentSub) interaction.reply({content: "You don't have an active subscription for this role.", ephemeral: true})
         try{
             const sub_id = currentSub!.get('subscriptions._id').toString()
@@ -102,7 +107,7 @@ export async function cancelRole(product: string, member: UserSchemaType, intera
 }
 
 //TODO: MAKE ADMIN FUNCTION
-export async function getActivationCode(x: UserSchemaType, productID: string, interaction: ContextMenuInteraction ){
+export async function getActivationCode(x: UserSchemaType, productID: string | string[], interaction: ContextMenuInteraction ){
     let boolcheckRole = await checkRole(productID, x)
     if(boolcheckRole){
         await UserDocument.findOne({"email": x.email, "subscriptions.product": productID, "subscriptions.canceled": false, "subscriptions.activated": false},
@@ -114,7 +119,7 @@ export async function getActivationCode(x: UserSchemaType, productID: string, in
                     interaction.reply({content: `There is no inactive subscription for this product`, ephemeral: true})
                 }
                 else {
-                    const token = sub.subscriptions.find(({ product }) => product === productID)!.activeToken
+                    const token = sub.subscriptions.find(({ product }) => productID.includes(product))!.activeToken
                     interaction.reply({content: `${x.email} activation token: ${token}`, ephemeral: true})
                 }
             }
@@ -139,7 +144,7 @@ export function assignRole(x: UserSchemaType, member: DiscordJS.GuildMember) {
 			member.roles.add(role)
             member.roles.remove(unverified_role)
             roleCount++;
-		} else {
+		} else if(tempDoc.canceled) {
 			member.roles.remove(role)
 		}
 	}
