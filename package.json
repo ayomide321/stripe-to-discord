@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "dev": "nodemon src/index.ts"
+    "dev": "ts-node src/index.ts"
   },
   "dependencies": {
     "@discordjs/builders": "^0.6.0",
