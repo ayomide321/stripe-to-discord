@@ -15,7 +15,7 @@ export const activate: Command = {
 		option.setName('package')
 			.setDescription('The gif category')
 			.setRequired(true)
-			.addChoice('trading', process.env.product_1)
+			.addChoice('trading', 'trading')
 			.addChoice('sports', process.env.product_2))
 	.addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
 		option.setName('activation')
@@ -24,7 +24,9 @@ export const activate: Command = {
 	
 
     run: async (interaction) => {
-		activateRole(interaction.options.getString('package')!, interaction.options.getString('activation')!, interaction)
+
+		var result: string[] = interaction.options.getString('package')! == process.env.product_2 ? [process.env.product_2!] : [process.env.product_1_0!, process.env.product_1_1!] 
+		activateRole(result, interaction.options.getString('activation')!, interaction)
     } 
 }
 

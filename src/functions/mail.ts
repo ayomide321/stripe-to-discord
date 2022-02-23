@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mailgun = require("mailgun-js");
-const DOMAIN = 'sandbox4467367b527c4372b9eeb6c43fead7c8.mailgun.org';
+const DOMAIN = 'mail.bmoneyenterprises.com';
 const api_key = process.env.mailgun_key
 const mg = mailgun({apiKey: api_key, domain: DOMAIN});
 
@@ -8,7 +8,7 @@ const mg = mailgun({apiKey: api_key, domain: DOMAIN});
 export default function sendMail(recipient: string, email_type: string, token: string=""){
 
     let sub: string = ""
-    if(email_type == "verification_template")
+    if(email_type == "verification")
     {	
         sub = "Your BMoney University Activation Code"
     }
@@ -16,9 +16,6 @@ export default function sendMail(recipient: string, email_type: string, token: s
         sub = "Your subscription is set to cancel"
     }
     else if(email_type == "final_cancel") {
-        sub = "Your subscription has been officially cancelled"
-    }
-    else if(email_type == "scholarship_loser") {
         sub = "Your subscription has been officially cancelled"
     }
     var data = {
