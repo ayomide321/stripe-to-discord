@@ -8,7 +8,7 @@ import sendMail from './functions/mail'
 require('dotenv').config();
 
 const stripe = require('stripe')(process.env.stripeToken);
-const endpointSecret = 'whsec_3f8cf7b3f4edf4eec5161723cd5264dab16251ddbe4fbc52fb87d3be9cd9eab9'
+const endpointSecret = process.env.endpointSecret
 const app = express();
 
 //Token generator function

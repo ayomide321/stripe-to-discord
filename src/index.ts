@@ -1,7 +1,7 @@
 /// <reference path="../client.d.ts" />
 
 //Imported functions
-import DiscordJS, { Intents, Collection, Client, TextChannel } from 'discord.js'
+import DiscordJS, { Intents, Collection, Client } from 'discord.js'
 import mongoose, { CallbackError } from 'mongoose';
 import fs from 'fs'
 
