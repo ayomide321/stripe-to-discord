@@ -1,8 +1,6 @@
 import { Collection, Message, ContextMenuInteraction, ApplicationCommandPermissionData  } from "discord.js";
 import { SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder } from "@discordjs/builders";
 
-declare module '*';
-
 declare module 'stripe' {
     namespace Stripe {
       interface TypedEventData<T> extends Stripe.Event.Data {
