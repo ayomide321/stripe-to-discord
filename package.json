@@ -2,8 +2,10 @@
   "module": "commonJs",
   "scripts": {
     "dev": "node src/index.ts",
+    "build": "tsc",
     "start": "ts-node src/index.ts",
-    "build": "tsc"
+    "postinstall": "tsc"
+    
   },
   "dependencies": {
     "@discordjs/builders": "^0.6.0",
