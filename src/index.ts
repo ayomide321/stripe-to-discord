@@ -43,8 +43,8 @@ client.on('ready', async () => {
 });
 
 client.on('guildMemberAdd', member => {
-    const welcome_channel = member.guild.channels.cache.get(process.env.welcome_channel!)! as TextChannel
-	welcome_channel.send('**' + member.user.username + '**, has joined the server!')
+    //const welcome_channel = member.guild.channels.cache.get(process.env.welcome_channel!)! as TextChannel
+	//welcome_channel.send('**' + member.user.username + '**, has joined the server!')
     member.roles.add(process.env.unverified_role!)
 });
 
