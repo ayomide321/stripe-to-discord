@@ -1,3 +1,5 @@
+/// <reference path="../client.d.ts" />
+
 import express from 'express'
 import { CallbackError } from 'mongoose';
 import { Stripe } from 'stripe';
