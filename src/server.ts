@@ -11,6 +11,7 @@ const stripe = require('stripe')(process.env.stripeToken);
 const endpointSecret = process.env.endpointSecret
 const app = express();
 
+
 //Token generator function
 function makeid(length: number) {
     var result           = '';
