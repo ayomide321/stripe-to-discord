@@ -39,7 +39,7 @@ client.on('ready', async () => {
 	client.handleCommands(commandFolders, './src/commands');
 	await client.guilds.cache.get(process.env.guild_id!)?.commands.permissions.set({ fullPermissions });
 	//list all commands
-	console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
+	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
 	assignServerRoles(client)
 });
 
@@ -50,8 +50,8 @@ client.on('guildMemberAdd', member => {
 });
 
 client.on('messageCreate', async (message) =>{
-
 	const member = await client.guilds.cache.get(process.env.guild_id!)!.members.fetch(message.author.id)!;
+	console.log(await message.guild.channels.cache.get("842055662070005772").permissionsFor(member).serialize())
 	await UserDocument.findOne({"discord_id": message.author.id}, 
 		function(err: CallbackError, user: UserSchemaType) {
 			if(err) throw err 
