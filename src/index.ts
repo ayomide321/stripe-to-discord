@@ -37,9 +37,9 @@ client.on('ready', async () => {
 	}
 	client.handleEvents(eventFiles, './src/events');
 	client.handleCommands(commandFolders, './src/commands');
-	await client.guilds.cache.get(process.env.guild_id!)?.commands.permissions.set({ fullPermissions });
+	//await client.guilds.cache.get(process.env.guild_id!)?.commands.permissions.set({ fullPermissions });
 	//list all commands
-	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
+	console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
 	assignServerRoles(client)
 });
 
