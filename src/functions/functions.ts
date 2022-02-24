@@ -8,7 +8,7 @@ require('dotenv').config();
 
 export const fullPermissions: GuildApplicationCommandPermissionData[] = [
 	{
-		id: '941727324083212363',
+		id: '946192188247793675',
 		permissions: [{
 			id: process.env.moderator_role_1!,
 			type: 'ROLE',
