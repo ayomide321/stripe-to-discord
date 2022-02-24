@@ -19,7 +19,7 @@ export default function sendMail(recipient: string, email_type: string, token: s
         sub = "Your subscription has been officially cancelled"
     }
     var data = {
-        from: 'ayomideomolewa@gmail.com',
+        from: 'BMoney Enterprises <activate@bmoneyenterprises.com>',
         to: recipient,
         subject: sub,
         template: email_type,
