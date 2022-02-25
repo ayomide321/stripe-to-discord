@@ -70,7 +70,9 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
             async function(err: CallbackError, doc: UserSchemaType | null) {
                 if(err || !doc) return "No User";
                 const existing_sub = doc.subscriptions.find( ({ product }) => product === product_id_created)
+                console.log(existing_sub)
                 if(existing_sub){
+                    if(existing_sub._id == subscriptionDoc._id) return "duplication error"
                     var productSub = existing_sub._id
                     console.log("An old identical subscription was found, deleting")
                     await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
