@@ -40,19 +40,15 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
     // Handle the event
     switch (event.type) {
 
-        case 'checkout.session.completed':
+        case 'customer.subscription.created':
             const paymentIntent: Stripe.PaymentIntent = event.data.object as Stripe.PaymentIntent;
             const customer = await stripe.customers.retrieve(paymentIntent.customer);
-            const session = await stripe.checkout.sessions.retrieve(
-            paymentIntent.id,
-            {
-                expand: ["line_items"],
-            });
+            const product_id_created = (customer as any).plan.product
 
             const newToken = makeid(6);
             const subscriptionDoc = {
-                _id: (paymentIntent as any).subscription,
-                product: session.line_items.data[0].price.product,
+                _id: (paymentIntent as any).id,
+                product: product_id_created,
                 activeToken: newToken,
                 activated: false,
             }
@@ -73,7 +69,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
             {upsert: true, new: false},
             async function(err: CallbackError, doc: UserSchemaType | null) {
                 if(err || !doc) return "No User";
-                const existing_sub = doc.subscriptions.find( ({ product }) => product === session.line_items.data[0].price.product)
+                const existing_sub = doc.subscriptions.find( ({ product }) => product === product_id_created)
                 if(existing_sub){
                     var productSub = existing_sub._id
                     console.log("An old identical subscription was found, deleting")
