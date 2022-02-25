@@ -43,7 +43,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
         case 'customer.subscription.created':
             const paymentIntent: Stripe.Subscription = event.data.object as Stripe.Subscription;
             const customer = await stripe.customers.retrieve(paymentIntent.customer);
-            const product_id_created = (customer as any).plan.product
+            const product_id_created = (paymentIntent as any).plan.product
 
             const newToken = makeid(6);
             const subscriptionDoc = {
