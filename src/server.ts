@@ -61,14 +61,17 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
                 'email': customer.email,
             }
 
-            sendMail(newCustomer.email, "verification", newToken)
-
             await UserDocument.findOneAndUpdate(
             productQuery,
             {'$setOnInsert': newCustomer},  
             {upsert: true, new: false},
             async function(err: CallbackError, doc: UserSchemaType | null) {
-                if(err || !doc) return "No User";
+                if(err) throw err;
+                if(!doc){
+                    sendMail(newCustomer.email, "verification", newToken)
+                    return;
+                }
+
                 const existing_sub = doc.subscriptions.find( ({ product }) => product === product_id_created)
                 console.log(existing_sub)
                 if(existing_sub){
@@ -78,10 +81,12 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
                     await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
                     existing_sub.set(subscriptionDoc);
                     doc!.save();
+                    sendMail(newCustomer.email, "verification", newToken)
                     return
                 } else {
                     doc.subscriptions.push(subscriptionDoc)
                     doc.save();
+                    sendMail(newCustomer.email, "verification", newToken)
                     return
                 }
             }).exec();
