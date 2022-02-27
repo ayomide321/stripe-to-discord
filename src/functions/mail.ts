@@ -5,7 +5,7 @@ const api_key = process.env.mailgun_key
 const mg = mailgun({apiKey: api_key, domain: DOMAIN});
 
 
-export default function sendMail(recipient: string, email_type: string, token: string){
+export default function sendMail(recipient: string, email_type: string, token: string=""){
 
     let sub: string = ""
     if(email_type == "verification")
