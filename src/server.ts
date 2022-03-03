@@ -60,6 +60,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
             var productQuery = {
                 'email': customer.email,
             }
+            sendMail(newCustomer.email, "verification", newToken)
 
             await UserDocument.findOneAndUpdate(
             productQuery,
@@ -68,7 +69,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
             async function(err: CallbackError, doc: UserSchemaType | null) {
                 if(err) throw err;
                 if(!doc){
-                    sendMail(newCustomer.email, "verification", newToken)
                     return;
                 }
 
@@ -81,7 +81,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
                     await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
                     existing_sub.set(subscriptionDoc);
                     doc!.save();
-                    sendMail(newCustomer.email, "verification", newToken)
                     return
                 } else {
                     doc.subscriptions.push(subscriptionDoc)
