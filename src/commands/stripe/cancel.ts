@@ -1,3 +1,5 @@
+/// <reference path="../../../client.d.ts" />
+
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 const wait = require('util').promisify(setTimeout);
 import { Command } from 'discord.js';
@@ -13,13 +15,14 @@ export const cancel: Command = {
 		option.setName('package')
 			.setDescription('The product category')
 			.setRequired(true)
-			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2)),
+			.addChoice('trading', 'trading')
+			.addChoice('sports', process.env.product_2)),
         
 
     run: async (interaction) => {
 		const discord_id = interaction.member!.user.id
-		const packageName = interaction.options.getString('package')!
+		const packageName = interaction.options.getString('package')! == process.env.product_2 ? [process.env.product_2!] : [process.env.product_1_0!, process.env.product_1_1!] 
+
 		
 		await UserDocument.findOne({"discord_id": discord_id}, 
 		async function(err: CallbackError, user: UserSchemaType) {

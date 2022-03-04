@@ -19,6 +19,7 @@ interface UserSchemaType extends Document {
     referral: string,
     referred: string,
     currentReferred: number,
+    messageCount: number,
     veteranUser: boolean,
     subscriptions: Types.Array<subscriptionsType>;
 }
@@ -54,6 +55,10 @@ var UserSchema = new Schema({
         default: 0,
     },
     currentReferred: {
+        type: Number,
+        default: 0,
+    },
+    messageCount: {
         type: Number,
         default: 0,
     },

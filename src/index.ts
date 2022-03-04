@@ -1,14 +1,15 @@
 /// <reference path="../client.d.ts" />
 
 //Imported functions
-import DiscordJS, { Intents, Collection, Client, TextChannel } from 'discord.js'
+import DiscordJS, { Intents, Collection, Client } from 'discord.js'
 import mongoose, { CallbackError } from 'mongoose';
 import fs from 'fs'
-require('dotenv').config();
 
 //Personal functions
 import { assignRole, assignServerRoles, fullPermissions } from './functions/functions'
 import { UserDocument, UserSchemaType } from './data/models/user'
+
+require('dotenv').config();
 
 //Client Intents
 export const client: Client = new DiscordJS.Client({ intents: [Intents.FLAGS.GUILDS, 'GUILD_MESSAGES', 'GUILDS'] });
@@ -30,26 +31,27 @@ const commandFolders = fs.readdirSync('./src/commands');
 client.on('ready', async () => {
 	console.log('Ready!')
 	for (const  file of functions) {
-		if(file != "functions.ts"){
+		if(file != "functions.ts" && file != "mail.ts"){
 			require(`./functions/${file}`)(client);
 		}
 	}
 	client.handleEvents(eventFiles, './src/events');
 	client.handleCommands(commandFolders, './src/commands');
 	await client.guilds.cache.get(process.env.guild_id!)?.commands.permissions.set({ fullPermissions });
-	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch("941727324083212363"))
+	//list all commands
+	//console.log(await client.guilds.cache.get(process.env.guild_id!)?.commands.fetch())
 	assignServerRoles(client)
 });
 
 client.on('guildMemberAdd', member => {
-    const welcome_channel = member.guild.channels.cache.get(process.env.welcome_channel!)! as TextChannel
-	welcome_channel.send('**' + member.user.username + '**, has joined the server!')
+    //const welcome_channel = member.guild.channels.cache.get(process.env.welcome_channel!)! as TextChannel
+	//welcome_channel.send('**' + member.user.username + '**, has joined the server!')
     member.roles.add(process.env.unverified_role!)
 });
 
 client.on('messageCreate', async (message) =>{
-
 	const member = await client.guilds.cache.get(process.env.guild_id!)!.members.fetch(message.author.id)!;
+	//console.log(await message.guild.channels.cache.get("842055662070005772").permissionsFor(member).serialize())
 	await UserDocument.findOne({"discord_id": message.author.id}, 
 		function(err: CallbackError, user: UserSchemaType) {
 			if(err) throw err 

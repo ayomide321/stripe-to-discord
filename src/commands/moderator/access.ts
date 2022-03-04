@@ -1,3 +1,5 @@
+/// <reference path="../../../client.d.ts" />
+
 const { SlashCommandBuilder, SlashCommandOptionsOnlyBuilder } = require('@discordjs/builders');
 import { Command } from 'discord.js';
 import { getActivationCode } from '../../functions/functions';
@@ -14,8 +16,8 @@ const access: Command = {
 		option.setName('package')
 			.setDescription('The gif category')
 			.setRequired(true)
-			.addChoice('trading', process.env.product_1)
-			.addChoice('forex', process.env.product_2))
+			.addChoice('trading', 'trading')
+			.addChoice('sports', process.env.product_2))
     .addStringOption((option: typeof SlashCommandOptionsOnlyBuilder) =>
         option.setName('email')
             .setDescription('Enter the email whose activation code you want to access')
@@ -23,7 +25,7 @@ const access: Command = {
 
     run: async (interaction) => {
         const email = interaction.options.getString('email')!
-        
+        const packageName = interaction.options.getString('package')! == process.env.product_2 ? [process.env.product_2!] : [process.env.product_1_0!, process.env.product_1_1!] 
         await UserDocument.findOne({"email": email},
         async function(err: CallbackError, user: UserSchemaType) {
 			if(err)  return "Error"
@@ -31,7 +33,7 @@ const access: Command = {
                 await interaction.reply({content: 'There is no user with this email!', ephemeral: true})
                 return
             }
-			getActivationCode(user, interaction.options.getString('package')!, interaction)
+			getActivationCode(user, packageName, interaction)
 		}).exec(); 
     } 
 }

@@ -1,12 +1,16 @@
+/// <reference path="../client.d.ts" />
+
 import express from 'express'
 import { CallbackError } from 'mongoose';
 import { Stripe } from 'stripe';
 import { UserDocument, UserSchemaType } from './data/models/user'
+import sendMail from './functions/mail'
 require('dotenv').config();
 
 const stripe = require('stripe')(process.env.stripeToken);
-const endpointSecret = 'whsec_3f8cf7b3f4edf4eec5161723cd5264dab16251ddbe4fbc52fb87d3be9cd9eab9'
+const endpointSecret = process.env.endpointSecret
 const app = express();
+
 
 //Token generator function
 function makeid(length: number) {
@@ -36,19 +40,15 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
     // Handle the event
     switch (event.type) {
 
-        case 'checkout.session.completed':
-            const paymentIntent: Stripe.PaymentIntent = event.data.object as Stripe.PaymentIntent;
+        case 'customer.subscription.created':
+            const paymentIntent: Stripe.Subscription = event.data.object as Stripe.Subscription;
             const customer = await stripe.customers.retrieve(paymentIntent.customer);
-            const session = await stripe.checkout.sessions.retrieve(
-            paymentIntent.id,
-            {
-                expand: ["line_items"],
-            });
+            const product_id_created = (paymentIntent as any).plan.product
 
             const newToken = makeid(6);
             const subscriptionDoc = {
-                _id: (paymentIntent as any).subscription,
-                product: session.line_items.data[0].price.product,
+                _id: (paymentIntent as any).id,
+                product: product_id_created,
                 activeToken: newToken,
                 activated: false,
             }
@@ -66,22 +66,32 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (request: ex
             {'$setOnInsert': newCustomer},  
             {upsert: true, new: false},
             async function(err: CallbackError, doc: UserSchemaType | null) {
-                if(err || !doc) return "No User";
-                const existing_sub = doc.subscriptions.find( ({ product }) => product === session.line_items.data[0].price.product)
+                if(err) throw err;
+                if(!doc){
+                    await sendMail(newCustomer.email, "verification", newToken)
+                    return;
+                }
+
+                const existing_sub = doc.subscriptions.find( ({ product }) => product === product_id_created)
+                console.log(existing_sub)
                 if(existing_sub){
+                    if(existing_sub._id == subscriptionDoc._id) return "duplication error"
                     var productSub = existing_sub._id
                     console.log("An old identical subscription was found, deleting")
                     await stripe.subscriptions.update(productSub, { cancel_at_period_end: true });
                     existing_sub.set(subscriptionDoc);
-                    doc.save();
+                    doc!.save();
+                    await sendMail(newCustomer.email, "verification", newToken)
                     return
                 } else {
                     doc.subscriptions.push(subscriptionDoc)
                     doc.save();
+                    await sendMail(newCustomer.email, "verification", newToken)
                     return
                 }
             }).exec();
             
+
             
             //Check for product type
             //if(session.line_items.data[0].price.product == process.env.stock_prod)
